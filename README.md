@@ -85,9 +85,10 @@ to gate on; run those locally or on a schedule.
 | OpenAI      | `openai:`     | per token   | `OPENAI_API_KEY` |
 | Anthropic   | `anthropic:`  | per token   | `ANTHROPIC_API_KEY` |
 
-Cost is computed from `lmeval/pricing.py`. Those rates are **example values** —
-update them against current provider pricing before trusting the dollar figures.
-Local models are always counted as $0.
+Cost is computed from `lmeval/pricing.py`, which ships current OpenAI and
+Anthropic rates (verified 2026-06-09 against each provider's pricing page).
+Provider pricing drifts over time, so re-check it periodically. Any model not
+listed there — including every local Ollama model — is counted as $0.
 
 ## Adding a suite
 

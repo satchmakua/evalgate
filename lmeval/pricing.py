@@ -1,16 +1,25 @@
 """Token pricing for cost tracking.
 
-Rates are USD per 1,000,000 tokens, as (input, output). These are EXAMPLE
-values for illustration -- check each provider's current pricing page and
-update them before trusting the dollar figures. Local Ollama models are $0.
+Rates are USD per 1,000,000 tokens, as (input, output). The figures below were
+taken from each provider's published pricing and verified on 2026-06-09:
+
+  - OpenAI:    https://openai.com/api/pricing/
+  - Anthropic: https://platform.claude.com/docs/en/about-claude/models/overview
+
+Provider pricing changes over time -- re-check these against the pages above
+periodically. Any model not listed here is priced at $0 by cost_usd() (as are
+all local Ollama models), so add a row before relying on the dollar figures for
+a model you actually run.
 """
 
-# UPDATE THESE against current provider pricing.
 PRICING = {
-    "openai:gpt-4o-mini": (0.15, 0.60),
+    # OpenAI -- https://openai.com/api/pricing/
     "openai:gpt-4o": (2.50, 10.00),
+    "openai:gpt-4o-mini": (0.15, 0.60),
+    # Anthropic -- https://platform.claude.com/docs/en/about-claude/models/overview
+    "anthropic:claude-opus-4-8": (5.00, 25.00),
+    "anthropic:claude-sonnet-4-6": (3.00, 15.00),
     "anthropic:claude-haiku-4-5": (1.00, 5.00),
-    "anthropic:claude-sonnet-4-5": (3.00, 15.00),
 }
 
 
