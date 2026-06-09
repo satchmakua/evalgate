@@ -1,0 +1,13 @@
+# eval run outputs (regenerated each run; never commit)
+results/
+# committed baselines are kept (see baselines/), only ignore stray local ones
+*.local.json
+
+__pycache__/
+*.pyc
+*.egg-info/
+build/
+dist/
+.venv/
+venv/
+.env

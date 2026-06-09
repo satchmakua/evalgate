@@ -1,0 +1,34 @@
+name: classification
+description: >
+  Single-label sentiment and intent classification. Deterministically graded,
+  so these are the suites used for CI regression gating.
+models:
+  - ollama:llama3.1:8b
+tasks:
+  - id: sentiment-positive
+    system: "You are a precise classifier. Answer with ONE word: positive, negative, or neutral."
+    prompt: |
+      Classify the sentiment.
+      Text: Absolutely loved it -- best purchase I've made all year.
+    graders:
+      - type: contains
+        any_of: ["positive"]
+        ignorecase: true
+
+  - id: sentiment-negative
+    system: "You are a precise classifier. Answer with ONE word: positive, negative, or neutral."
+    prompt: |
+      Classify the sentiment.
+      Text: Broke after two days and customer support never replied.
+    graders:
+      - type: contains
+        any_of: ["negative"]
+        ignorecase: true
+
+  - id: intent-refund
+    system: "Classify the intent as one of: refund, shipping, account, other. One word only."
+    prompt: "I want my money back for the blender that arrived cracked."
+    graders:
+      - type: contains
+        any_of: ["refund"]
+        ignorecase: true

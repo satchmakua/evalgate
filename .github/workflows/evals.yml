@@ -1,0 +1,42 @@
+name: evals
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    name: unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install -e ".[dev]"
+      - run: pytest -q
+
+  gate:
+    name: regression gate
+    runs-on: ubuntu-latest
+    needs: test
+    env:
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install -e .
+      - name: Gate deterministic suites against a cheap hosted model
+        run: |
+          if [ -z "$OPENAI_API_KEY" ]; then
+            echo "No OPENAI_API_KEY secret configured; skipping live gate."
+            exit 0
+          fi
+          lmeval gate --name ci \
+            --models openai:gpt-4o-mini \
+            --only classification structured-output \
+            --deterministic-only \
+            --min-pass-rate 0.8

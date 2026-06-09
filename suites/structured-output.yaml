@@ -1,0 +1,32 @@
+name: structured-output
+description: >
+  The model must emit strict JSON conforming to a schema. Deterministically
+  graded via JSON Schema validation -- a strong test of tool/agent readiness.
+tasks:
+  - id: contact-extract
+    system: "Extract the fields and reply with ONLY JSON. No prose, no code fences."
+    prompt: "Jane Doe, jane@example.com, +1-555-0100. Extract name, email, and phone."
+    graders:
+      - type: json_schema
+        schema:
+          type: object
+          required: [name, email, phone]
+          properties:
+            name: { type: string }
+            email: { type: string }
+            phone: { type: string }
+
+  - id: action-object
+    system: "Translate the request into ONE action, as JSON only."
+    prompt: "Schedule a meeting with Sam next Tuesday at 3pm about the budget."
+    graders:
+      - type: json_schema
+        schema:
+          type: object
+          required: [action, params]
+          properties:
+            action: { type: string }
+            params: { type: object }
+      - type: contains
+        any_of: ["meeting", "schedule", "budget"]
+        ignorecase: true

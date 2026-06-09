@@ -1,0 +1,21 @@
+name: summarization
+description: >
+  Faithful, concise summaries graded by an LLM judge -- the kind of subjective
+  quality deterministic checks can't capture. Excluded from CI gating by default.
+tasks:
+  - id: tldr-one-sentence
+    system: "Summarize the text in exactly one sentence."
+    prompt: |
+      Summarize:
+      The committee met for three hours and, after debating five proposals,
+      approved a phased rollout of the new transit fare system beginning in the
+      spring, with a six-month grace period before late penalties take effect.
+    graders:
+      - type: llm_judge
+        judge_model: ollama:llama3.1:8b
+        pass_threshold: 4
+        rubric: |
+          Score 1-5. A 5 is a single sentence that is faithful to the source,
+          captures BOTH the phased spring rollout AND the six-month grace period,
+          and invents no facts. Deduct for multiple sentences, key omissions, or
+          hallucinations.

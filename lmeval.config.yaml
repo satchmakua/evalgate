@@ -1,0 +1,15 @@
+# Default run configuration. Override any of this from the CLI.
+
+# Provider assumed when a model id has no "provider:" prefix.
+default_provider: ollama
+
+# Models used when neither --models nor a suite's own `models:` is given.
+# Format is "provider:model". Local Ollama models cost nothing.
+default_models:
+  - ollama:llama3.1:8b
+  - ollama:qwen2.5:7b
+
+# Sampling options. temperature 0 keeps eval runs as reproducible as possible.
+model_options:
+  temperature: 0.0
+  # max_tokens: 1024   # used by the hosted (openai/anthropic) providers
