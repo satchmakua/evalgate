@@ -16,13 +16,12 @@ limitations that motivate it.
 
 ## Near term
 
-- Persist raw model outputs alongside the JSON report for debugging.
-- Per-task diffs in the generated reports.
+- An end-to-end test against a stub HTTP server.
 
 ## Medium term
 
-- An end-to-end test against a stub HTTP server.
 - Judge ensembling / repeated sampling to quantify score variance.
+- Confidence intervals on small-N pass rates.
 
 ## Later
 

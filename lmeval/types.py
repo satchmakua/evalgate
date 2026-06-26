@@ -54,6 +54,8 @@ class TaskResult:
     suite: str
     task_id: str
     model: str
+    system: Optional[str] = None
+    prompt: str = ""
     output: str = ""
     prompt_tokens: int = 0
     completion_tokens: int = 0

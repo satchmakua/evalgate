@@ -60,6 +60,35 @@ def _md_table(rows):
     return "\n".join([header, sep, *body])
 
 
+def _preview(text, limit=200):
+    """A single-line, length-bounded preview of (possibly multi-line) text."""
+    s = " ".join(str(text).split())
+    return s if len(s) <= limit else s[:limit] + "..."
+
+
+def _failures_md(results, max_items=50):
+    """Per-task detail for everything that didn't pass -- the actionable part."""
+    failed = [r for r in results if r.verdict is False]
+    if not failed:
+        return "All graded tasks passed."
+    blocks = []
+    for r in failed[:max_items]:
+        lines = [f"### {r.suite} :: {r.task_id} :: {r.model}"]
+        if r.prompt:
+            lines.append(f"- prompt: {_preview(r.prompt)}")
+        if r.error:
+            lines.append(f"- error: {_preview(r.error)}")
+        else:
+            lines.append(f"- output: {_preview(r.output)}")
+            lines += [f"- failed `{g.grader}`: {g.detail}"
+                      for g in r.grades if g.passed is False]
+        blocks.append("\n".join(lines))
+    hidden = len(failed) - max_items
+    if hidden > 0:
+        blocks.append(f"_... and {hidden} more failing tasks (see transcripts)._")
+    return "\n\n".join(blocks)
+
+
 def write_reports(results, out_dir):
     out = Path(out_dir)
     out.mkdir(parents=True, exist_ok=True)
@@ -77,6 +106,19 @@ def write_reports(results, out_dir):
         writer.writerows(rows)
 
     md_path = out / f"summary-{stamp}.md"
-    md_path.write_text(f"# Eval run -- {stamp}\n\n{_md_table(rows)}\n")
+    md_path.write_text(
+        f"# Eval run -- {stamp}\n\n{_md_table(rows)}\n\n"
+        f"## Failures\n\n{_failures_md(results)}\n",
+        encoding="utf-8")
 
-    return {"json": str(json_path), "csv": str(csv_path), "md": str(md_path), "rows": rows}
+    # Per-task transcripts (input, output, grades) as JSONL -- the artifact you
+    # grep when a task fails and you need to see exactly what was sent and got back.
+    jsonl_path = out / f"transcripts-{stamp}.jsonl"
+    with open(jsonl_path, "w", newline="") as f:
+        for r in results:
+            record = asdict(r)
+            record["verdict"] = r.verdict
+            f.write(json.dumps(record) + "\n")
+
+    return {"json": str(json_path), "csv": str(csv_path), "md": str(md_path),
+            "transcripts": str(jsonl_path), "rows": rows}

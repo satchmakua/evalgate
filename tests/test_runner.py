@@ -46,6 +46,8 @@ def test_run_task_success(monkeypatch):
     assert (r.prompt_tokens, r.completion_tokens) == (10, 5)
     assert r.cost_usd > 0
     assert r.verdict is True
+    assert r.system == "be terse"
+    assert r.prompt == "classify"  # input captured for debugging
     sent_messages = fake.calls[0][1]
     assert sent_messages[0] == {"role": "system", "content": "be terse"}
     assert sent_messages[1] == {"role": "user", "content": "classify"}
@@ -58,6 +60,7 @@ def test_run_task_captures_provider_error(monkeypatch):
     assert r.error == "boom"
     assert r.verdict is False
     assert r.grades == []
+    assert r.prompt == "x" and r.system is None  # input captured even on error
 
 
 def test_deterministic_only_skips_judge(monkeypatch):

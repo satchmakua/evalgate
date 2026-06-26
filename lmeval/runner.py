@@ -42,7 +42,8 @@ def run_task(suite, task, model_id, default_provider, options, deterministic_onl
     try:
         comp = provider.complete(model, messages, options=options)
     except Exception as exc:
-        return TaskResult(suite=suite.name, task_id=task.id, model=full_id, error=str(exc))
+        return TaskResult(suite=suite.name, task_id=task.id, model=full_id,
+                          system=task.system, prompt=task.prompt, error=str(exc))
 
     grades = []
     for spec in task.graders:
@@ -57,6 +58,8 @@ def run_task(suite, task, model_id, default_provider, options, deterministic_onl
         suite=suite.name,
         task_id=task.id,
         model=full_id,
+        system=task.system,
+        prompt=task.prompt,
         output=comp.text,
         prompt_tokens=comp.prompt_tokens,
         completion_tokens=comp.completion_tokens,

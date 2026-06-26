@@ -1,4 +1,7 @@
-from lmeval.report import summarize
+import json
+from pathlib import Path
+
+from lmeval.report import summarize, write_reports
 from lmeval.types import GradeResult, TaskResult
 
 
@@ -53,3 +56,66 @@ def test_summarize_splits_by_suite_and_model():
 
 def test_summarize_empty():
     assert summarize([]) == []
+
+
+def test_write_reports_emits_all_artifacts(tmp_path):
+    results = [TaskResult(suite="s", task_id="t", model="openai:gpt-4o",
+                          system="be terse", prompt="hi", output="positive",
+                          grades=[GradeResult("contains", passed=True)])]
+    paths = write_reports(results, tmp_path)
+    for key in ("json", "csv", "md", "transcripts"):
+        assert Path(paths[key]).exists()
+
+
+def test_transcripts_jsonl_is_self_contained(tmp_path):
+    results = [
+        TaskResult(suite="s", task_id="t1", model="openai:gpt-4o",
+                   system="be terse", prompt="hi", output="positive",
+                   grades=[GradeResult("contains", passed=True)]),
+        TaskResult(suite="s", task_id="t2", model="openai:gpt-4o",
+                   prompt="boom", error="timeout"),
+    ]
+    paths = write_reports(results, tmp_path)
+    lines = Path(paths["transcripts"]).read_text().splitlines()
+    assert len(lines) == 2
+
+    first = json.loads(lines[0])
+    assert first["prompt"] == "hi"
+    assert first["system"] == "be terse"
+    assert first["output"] == "positive"
+    assert first["verdict"] is True
+    assert first["grades"][0]["grader"] == "contains"
+
+    second = json.loads(lines[1])
+    assert second["prompt"] == "boom"
+    assert second["error"] == "timeout"
+    assert second["verdict"] is False  # errored task
+
+
+def test_md_report_lists_failures_with_detail(tmp_path):
+    results = [
+        TaskResult(suite="s", task_id="ok", model="m", output="yes",
+                   grades=[GradeResult("exact", passed=True, detail="== 'yes'")]),
+        TaskResult(suite="s", task_id="bad", model="m", prompt="say yes", output="no",
+                   grades=[GradeResult("exact", passed=False, detail="== 'yes'")]),
+    ]
+    md = Path(write_reports(results, tmp_path)["md"]).read_text(encoding="utf-8")
+    assert "## Failures" in md
+    assert "s :: bad :: m" in md
+    assert "failed `exact`" in md
+    assert "say yes" in md          # prompt preview
+    assert "output: no" in md
+    assert "s :: ok :: m" not in md  # the passing task is not listed
+
+
+def test_md_report_all_passed(tmp_path):
+    results = [TaskResult(suite="s", task_id="ok", model="m",
+                          grades=[GradeResult("exact", passed=True)])]
+    md = Path(write_reports(results, tmp_path)["md"]).read_text(encoding="utf-8")
+    assert "All graded tasks passed." in md
+
+
+def test_md_report_shows_errored_task(tmp_path):
+    results = [TaskResult(suite="s", task_id="boom", model="m", prompt="x", error="timeout")]
+    md = Path(write_reports(results, tmp_path)["md"]).read_text(encoding="utf-8")
+    assert "error: timeout" in md

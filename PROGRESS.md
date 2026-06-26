@@ -17,8 +17,10 @@ Current implementation status of llm-eval-harness. Last updated 2026-06-25.
   in stable order), and an optional `--max-cost` budget that stops a run before
   it overspends (`lmeval/runner.py`).
 - **Reporting** — per-(suite, model) summaries with pass rate, mean judge score,
-  token/cost totals, and p50/p95 latency, written as JSON, CSV, and Markdown
-  (`lmeval/report.py`).
+  token/cost totals, and p50/p95 latency (JSON, CSV, and a Markdown report that
+  also lists each failing task with its output and the graders that failed),
+  plus a `transcripts-*.jsonl` with one self-contained record per task — input
+  sent, model output, and grades — for debugging (`lmeval/report.py`).
 - **Regression gating** — baseline snapshots plus relative-drop and absolute
   pass-rate floors, with a non-zero exit code on failure; wired into GitHub
   Actions (`lmeval/gate.py`, `.github/workflows/evals.yml`).
@@ -30,7 +32,7 @@ Current implementation status of llm-eval-harness. Last updated 2026-06-25.
 - Deterministic and LLM-judge graders (`tests/test_graders.py`).
 - Gate and baseline logic (`tests/test_gate.py`).
 - Pricing calculations (`tests/test_pricing.py`).
-- Report aggregation (`tests/test_report.py`).
+- Report aggregation and transcript artifacts (`tests/test_report.py`).
 - Suite loading (`tests/test_suite.py`).
 - Provider registry and the `provider:model` parser (`tests/test_providers.py`).
 - HTTP retry/backoff helper (`tests/test_http_retry.py`).
@@ -39,6 +41,6 @@ Current implementation status of llm-eval-harness. Last updated 2026-06-25.
 
 ## Not yet done
 
-Tracked in [`ROADMAP.md`](ROADMAP.md). Highest-priority items: persisting raw
-model outputs, per-task diffs in reports, and an end-to-end test against a
-stubbed provider.
+Tracked in [`ROADMAP.md`](ROADMAP.md). Highest-priority items: an end-to-end test
+against a stubbed provider, judge ensembling for score-variance estimates, and
+confidence intervals on small-N pass rates.

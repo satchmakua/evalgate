@@ -55,8 +55,12 @@ lmeval run --only classification # just one suite
 lmeval run --models ollama:qwen2.5:7b
 ```
 
-Each run prints a summary table and writes `results/run-*.json`,
-`summary-*.csv`, and `summary-*.md`.
+Each run prints a summary table and writes four artifacts to `results/`: a
+machine-readable `run-*.json`, a `summary-*.csv` and `summary-*.md`, and a
+`transcripts-*.jsonl` with one self-contained record per task (the exact input
+sent, the model output, and the grades) — the thing you grep when a task fails.
+The `summary-*.md` also carries a **Failures** section listing each failing task
+with its prompt/output preview and the specific graders that failed.
 
 ## Regression gating
 
