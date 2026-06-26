@@ -92,8 +92,13 @@ listed there — including every local Ollama model — is counted as $0.
 
 Pass `--max-cost <USD>` to any command to cap spend: the run stops before
 starting the next task once cumulative cost reaches the budget. It's a soft cap
-(actual spend can exceed it by at most the one task that crosses the line), and
-free local models never trip it.
+(actual spend can exceed it by at most the one task that crosses the line, or by
+up to `--concurrency` tasks when running in parallel), and free local models
+never trip it.
+
+Pass `--concurrency <N>` to run up to N tasks in parallel (default 1). Each task
+is a single HTTP call, so this is I/O-bound work that parallelizes well;
+results are still reported in a stable suite/model/task order.
 
 ## Adding a suite
 

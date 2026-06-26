@@ -13,8 +13,9 @@ Current implementation status of llm-eval-harness. Last updated 2026-06-25.
 - **Graders** — deterministic (`exact`, `contains`, `regex`, `json_schema`) and
   an LLM-as-judge grader (`lmeval/graders/`).
 - **Runner** — executes every (suite × model × task) into a `TaskResult`, with
-  per-task fault isolation and an optional `--max-cost` budget that stops a run
-  before it overspends (`lmeval/runner.py`).
+  per-task fault isolation, optional parallelism (`--concurrency`, results kept
+  in stable order), and an optional `--max-cost` budget that stops a run before
+  it overspends (`lmeval/runner.py`).
 - **Reporting** — per-(suite, model) summaries with pass rate, mean judge score,
   token/cost totals, and p50/p95 latency, written as JSON, CSV, and Markdown
   (`lmeval/report.py`).
@@ -38,6 +39,6 @@ Current implementation status of llm-eval-harness. Last updated 2026-06-25.
 
 ## Not yet done
 
-Tracked in [`ROADMAP.md`](ROADMAP.md). Highest-priority items: concurrent task
-execution, persisting raw model outputs, and an end-to-end test against a live
-or stubbed provider.
+Tracked in [`ROADMAP.md`](ROADMAP.md). Highest-priority items: persisting raw
+model outputs, per-task diffs in reports, and an end-to-end test against a
+stubbed provider.

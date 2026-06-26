@@ -95,3 +95,23 @@ def test_cost_budget_ignores_free_models(monkeypatch):
     results = run_suites([suite], {"default_provider": "ollama", "model_options": {}},
                          max_cost=0.01)
     assert len(results) == 3  # local models cost $0, so the budget never trips
+
+
+def test_concurrency_runs_all_tasks_in_order(monkeypatch):
+    _use(monkeypatch, FakeProvider(text="positive"))
+    tasks = [Task(id=f"t{i}", prompt="x", graders=[_contains("positive")]) for i in range(6)]
+    suite = Suite(name="s", tasks=tasks, models=["openai:gpt-4o"])
+    results = run_suites([suite], {"default_provider": "ollama", "model_options": {}},
+                         workers=4)
+    # completion order varies, but results stay in submission order
+    assert [r.task_id for r in results] == [f"t{i}" for i in range(6)]
+
+
+def test_concurrency_respects_budget(monkeypatch):
+    _use(monkeypatch, FakeProvider(prompt_tokens=1_000_000, completion_tokens=0))  # $2.50/task
+    tasks = [Task(id=f"t{i}", prompt="x", graders=[_contains("positive")]) for i in range(10)]
+    suite = Suite(name="s", tasks=tasks, models=["openai:gpt-4o"])
+    results = run_suites([suite], {"default_provider": "ollama", "model_options": {}},
+                         max_cost=3.0, workers=3)
+    # the $3 budget stops it well short of all 10; the primed batch still runs
+    assert 3 <= len(results) < 10

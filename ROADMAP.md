@@ -9,8 +9,6 @@ limitations that motivate it.
   (graders, gate, pricing, reporting, suite loading, the `provider:model`
   parser, retry/backoff, runner, and CLI), but nothing exercises a real model
   call end to end.
-- **Sequential execution.** The runner makes one model call at a time, so large
-  suites are latency-bound.
 - **Single-sample judging.** The LLM judge scores once with one model; score
   variance is not measured, and small-N pass rates carry no confidence interval.
 - **Partial `seed` support.** Only the OpenAI adapter forwards `seed`, so
@@ -18,13 +16,13 @@ limitations that motivate it.
 
 ## Near term
 
-- Concurrent task execution (the runner is currently sequential).
 - Persist raw model outputs alongside the JSON report for debugging.
+- Per-task diffs in the generated reports.
 
 ## Medium term
 
-- Per-task diffs in the generated reports.
 - An end-to-end test against a stub HTTP server.
+- Judge ensembling / repeated sampling to quantify score variance.
 
 ## Later
 

@@ -1,5 +1,7 @@
 """Run suites against models and collect scored, costed, timed results."""
 
+from concurrent.futures import FIRST_COMPLETED, ThreadPoolExecutor, wait
+
 from .graders import is_deterministic, run_grader
 from .pricing import cost_usd
 from .providers import get_provider, parse_model_id
@@ -64,28 +66,62 @@ def run_task(suite, task, model_id, default_provider, options, deterministic_onl
     )
 
 
-def run_suites(suites, config, cli_models=None, deterministic_only=False, max_cost=None):
+def run_suites(suites, config, cli_models=None, deterministic_only=False,
+               max_cost=None, workers=1):
     """Run every (suite, model, task) and collect results.
 
-    `max_cost` is an optional USD budget. It's a soft cap: the run stops before
-    starting a task once cumulative spend has reached the budget, so actual
-    spend can exceed it by at most the one task that crossed the line. Free
-    (local) models never trip it.
+    `workers` runs that many tasks in parallel (default 1 = sequential). Each
+    task is one HTTP call, so this is I/O-bound and parallelizes well; results
+    are returned in suite/model/task order regardless of completion order.
+
+    `max_cost` is an optional USD budget. It's a soft cap: no new task is started
+    once cumulative spend has reached the budget. With `workers > 1`, up to
+    `workers` tasks may already be in flight when the budget trips, so the
+    overshoot bound grows with the worker count. Free (local) models never trip
+    it.
     """
     options = config.get("model_options", {})
     default_provider = config.get("default_provider", "ollama")
-    results = []
+    workers = max(1, workers)
+
+    work = [(suite, model_id, task)
+            for suite in suites
+            for model_id in resolve_models(suite, config, cli_models)
+            for task in suite.tasks]
+
+    results = [None] * len(work)
     total_cost = 0.0
-    for suite in suites:
-        for model_id in resolve_models(suite, config, cli_models):
-            for task in suite.tasks:
-                if max_cost is not None and total_cost >= max_cost:
-                    print(f"  cost budget ${max_cost} reached "
-                          f"(spent ${round(total_cost, 6)}); stopping early")
-                    return results
+    next_idx = 0
+    announced_budget = False
+
+    def over_budget():
+        return max_cost is not None and total_cost >= max_cost
+
+    with ThreadPoolExecutor(max_workers=workers) as pool:
+        pending = {}  # future -> result index
+
+        def submit_ready():
+            nonlocal next_idx
+            while len(pending) < workers and next_idx < len(work) and not over_budget():
+                suite, model_id, task = work[next_idx]
                 print(f"  {suite.name} :: {model_id} :: {task.id}")
-                result = run_task(suite, task, model_id, default_provider,
-                                  options, deterministic_only)
-                results.append(result)
+                future = pool.submit(run_task, suite, task, model_id,
+                                     default_provider, options, deterministic_only)
+                pending[future] = next_idx
+                next_idx += 1
+
+        submit_ready()
+        while pending:
+            done, _ = wait(pending, return_when=FIRST_COMPLETED)
+            for future in done:
+                idx = pending.pop(future)
+                result = future.result()
+                results[idx] = result
                 total_cost += result.cost_usd
-    return results
+            if over_budget() and next_idx < len(work) and not announced_budget:
+                print(f"  cost budget ${max_cost} reached "
+                      f"(spent ${round(total_cost, 6)}); stopping early")
+                announced_budget = True
+            submit_ready()  # a no-op once over budget
+
+    return [r for r in results if r is not None]
