@@ -1,6 +1,6 @@
 # Progress
 
-Current implementation status of llm-eval-harness. Last updated 2026-06-25.
+Current implementation status of llm-eval-harness. Last updated 2026-06-27.
 
 ## Implemented
 
@@ -38,9 +38,10 @@ Current implementation status of llm-eval-harness. Last updated 2026-06-25.
 - HTTP retry/backoff helper (`tests/test_http_retry.py`).
 - Runner, including the cost-budget guardrail (`tests/test_runner.py`).
 - CLI subcommands and exit codes (`tests/test_cli.py`).
+- End-to-end: a real provider adapter over a stub HTTP server, including
+  retry/backoff (`tests/test_e2e.py`).
 
 ## Not yet done
 
-Tracked in [`ROADMAP.md`](ROADMAP.md). Highest-priority items: an end-to-end test
-against a stubbed provider, judge ensembling for score-variance estimates, and
-confidence intervals on small-N pass rates.
+Tracked in [`ROADMAP.md`](ROADMAP.md). Highest-priority items: judge ensembling
+for score-variance estimates and confidence intervals on small-N pass rates.

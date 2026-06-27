@@ -198,8 +198,7 @@ the current implementation status is in [`PROGRESS.md`](PROGRESS.md).
 lmeval/        the package (providers, graders, runner, report, gate, cli)
 suites/        eval suites in YAML
 baselines/     committed baseline snapshots for gating
-tests/         pytest unit tests (graders, gate, pricing, report, suite,
-               providers, retry, runner, cli)
+tests/         pytest unit tests + a stubbed-HTTP end-to-end test
 .github/       CI workflow
 ```
 
