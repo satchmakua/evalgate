@@ -46,3 +46,20 @@ def test_name_defaults_to_filename(tmp_path):
     f = tmp_path / "myfile.yaml"
     f.write_text("tasks: []\n")
     assert load_suites(f)[0].name == "myfile"
+
+
+def test_tags_merge_suite_and_task_level(tmp_path):
+    f = tmp_path / "s.yaml"
+    f.write_text(
+        "name: s\n"
+        "tags: [suite-tag]\n"
+        "tasks:\n"
+        "  - id: t1\n"
+        "    prompt: p\n"
+        "    tags: [task-tag]\n"
+        "  - id: t2\n"
+        "    prompt: p\n"
+    )
+    t1, t2 = load_suites(f)[0].tasks
+    assert t1.tags == ["suite-tag", "task-tag"]  # suite-level + task-level, in order
+    assert t2.tags == ["suite-tag"]              # suite-level applies to all tasks

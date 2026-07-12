@@ -4,8 +4,11 @@ description: >
   so these are the suites used for CI regression gating.
 models:
   - ollama:llama3.1:8b
+tags:
+  - classification
 tasks:
   - id: sentiment-positive
+    tags: [sentiment]
     system: "You are a precise classifier. Answer with ONE word: positive, negative, or neutral."
     prompt: |
       Classify the sentiment.
@@ -16,6 +19,7 @@ tasks:
         ignorecase: true
 
   - id: sentiment-negative
+    tags: [sentiment]
     system: "You are a precise classifier. Answer with ONE word: positive, negative, or neutral."
     prompt: |
       Classify the sentiment.
@@ -26,6 +30,7 @@ tasks:
         ignorecase: true
 
   - id: intent-refund
+    tags: [intent]
     system: "Classify the intent as one of: refund, shipping, account, other. One word only."
     prompt: "I want my money back for the blender that arrived cracked."
     graders:

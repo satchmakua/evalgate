@@ -5,7 +5,8 @@ Current implementation status of llm-eval-harness. Last updated 2026-06-27.
 ## Implemented
 
 - **Suite loading** — eval suites defined in YAML (`suites/*.yaml`), loaded into
-  `Suite`/`Task` objects (`lmeval/suite.py`).
+  `Suite`/`Task` objects, with per-task and suite-level `tags` merged
+  (`lmeval/suite.py`).
 - **Providers** — uniform raw-HTTP adapters for Ollama, OpenAI, Anthropic,
   Google Gemini, and Amazon Bedrock (Anthropic models, hand-rolled SigV4) behind
   a single interface, addressed as `provider:model`. Hosted adapters retry
@@ -23,8 +24,9 @@ Current implementation status of llm-eval-harness. Last updated 2026-06-27.
 - **Reporting** — per-(suite, model) summaries with pass rate (and a 95% Wilson
   confidence interval), mean judge score, token/cost totals, and p50/p95 latency
   (JSON, CSV, a browsable self-contained HTML dashboard, and a Markdown report
-  that lists each failing task with its output and the graders that failed, and
-  flags tasks that flip under `--repeat`), plus a `transcripts-*.jsonl` with one
+  that lists each failing task with its output and the graders that failed,
+  flags tasks that flip under `--repeat`, and breaks scores down per (tag,
+  model)), plus a `transcripts-*.jsonl` with one
   self-contained record per task — input sent, model output, and grades — for
   debugging (`lmeval/report.py`).
 - **Regression gating** — baseline snapshots plus relative-drop and absolute
@@ -41,19 +43,19 @@ Current implementation status of llm-eval-harness. Last updated 2026-06-27.
   (`tests/test_graders.py`).
 - Gate and baseline logic (`tests/test_gate.py`).
 - Pricing calculations (`tests/test_pricing.py`).
-- Report aggregation, pass-rate confidence intervals, transcript artifacts, and
-  the HTML dashboard (`tests/test_report.py`).
-- Suite loading (`tests/test_suite.py`).
+- Report aggregation, pass-rate confidence intervals, transcript artifacts, tag
+  breakdowns, and the HTML dashboard (`tests/test_report.py`).
+- Suite loading and tag merging (`tests/test_suite.py`).
 - Provider registry and the `provider:model` parser (`tests/test_providers.py`).
 - HTTP retry/backoff helper (`tests/test_http_retry.py`).
 - Runner, including the cost-budget guardrail, repeated-sampling vote,
   judge-cost tracking, and in-run caching (`tests/test_runner.py`).
 - CLI subcommands and exit codes (`tests/test_cli.py`).
-- End-to-end: the OpenAI, Gemini, and Bedrock adapters over a stub HTTP server,
-  including retry/backoff and the SigV4 signer's known-answer vector
-  (`tests/test_e2e.py`).
+- End-to-end: the Anthropic, OpenAI, Gemini, and Bedrock adapters over a stub
+  HTTP server, including retry/backoff and the SigV4 signer's known-answer
+  vector (`tests/test_e2e.py`).
 
 ## Not yet done
 
-Tracked in [`ROADMAP.md`](ROADMAP.md). Near-term: per-tag/category score
-breakdowns in the report. See `ROADMAP.md` for medium-term ideas.
+Tracked in [`ROADMAP.md`](ROADMAP.md). Near-term: persisting the completion
+cache to disk for cross-run skips. See `ROADMAP.md` for medium-term ideas.

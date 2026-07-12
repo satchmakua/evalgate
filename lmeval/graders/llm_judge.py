@@ -6,7 +6,6 @@ from CI gating by default (see --deterministic-only).
 """
 
 import json
-import re
 
 from ..types import GradeResult
 
@@ -30,9 +29,14 @@ def grade_llm_judge(output, spec, judge_fn=None, judge_fns=None, **kwargs):
     scores, rationales = [], []
     for fn in fns:
         parsed = _safe_json(fn(prompt))
-        if parsed and "score" in parsed:
-            scores.append(float(parsed["score"]))
-            rationales.append(parsed.get("rationale", ""))
+        if not parsed or "score" not in parsed:
+            continue
+        try:
+            score = float(parsed["score"])
+        except (TypeError, ValueError):
+            continue  # judge returned a non-numeric score (null, "N/A", ...) -> skip
+        scores.append(score)
+        rationales.append(parsed.get("rationale", ""))
     if not scores:
         return GradeResult("llm_judge", passed=None, score=None,
                            detail=f"no parseable score from {len(fns)} judge(s)")
@@ -45,10 +49,16 @@ def grade_llm_judge(output, spec, judge_fn=None, judge_fns=None, **kwargs):
 
 
 def _safe_json(text):
-    match = re.search(r"\{.*\}", text, re.DOTALL)
-    if not match:
+    """Parse the first JSON object in `text`, tolerating surrounding prose.
+
+    Uses raw_decode so trailing text (including stray braces) after a valid
+    object doesn't defeat the parse the way a greedy `{.*}` match would.
+    """
+    start = text.find("{")
+    if start == -1:
         return None
     try:
-        return json.loads(match.group(0))
-    except Exception:
+        obj, _ = json.JSONDecoder().raw_decode(text[start:])
+        return obj
+    except ValueError:
         return None

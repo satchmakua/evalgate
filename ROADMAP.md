@@ -11,17 +11,21 @@ limitations that motivate it.
   `judge_cost_usd`, but their tokens aren't added to the token columns (those
   stay the task model's).
 - **Bedrock signing isn't exercised against live AWS.** The SigV4 signer is
-  verified against the official AWS test vector and the request shape is
-  stub-tested, but there are no AWS credentials available here to run a real
-  call end to end.
+  verified against two official AWS test vectors (get-vanilla + get-utf8) and
+  the request shape is stub-tested, but there are no AWS credentials available
+  here to run a real call end to end.
+- **In-run cache dedup is best-effort under concurrency.** With `--cache` and
+  `--concurrency > 1`, two identical calls launched at the same instant can both
+  run; results stay correct but the cost dedup isn't exact. Exact when
+  sequential. A per-key lock/future would make it exact.
 
 ## Near term
 
-- Per-tag/category score breakdowns in the report.
+- Persist the completion cache to disk so unchanged tasks are skipped across runs.
 
 ## Medium term
 
-- Persist the completion cache to disk so unchanged tasks are skipped across runs.
+- Weighted scoring (per-suite or per-tag weights) in the gate.
 
 ---
 

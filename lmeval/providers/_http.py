@@ -48,7 +48,7 @@ def post_with_retries(url, *, max_retries=3, base_delay=0.5, max_delay=8.0,
         if attempt >= max_retries:
             break
         if delay is None:
-            delay = min(max_delay, base_delay * (2 ** attempt))
-        sleep(delay)
+            delay = base_delay * (2 ** attempt)
+        sleep(min(max_delay, delay))  # clamp backoff AND an untrusted Retry-After
 
     raise last_exc

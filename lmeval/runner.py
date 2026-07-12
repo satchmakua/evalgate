@@ -54,6 +54,8 @@ def run_task(suite, task, model_id, default_provider, options,
 
     # Optional in-run cache: reuse the completion for an identical
     # (model, messages, options) call so duplicates aren't paid for twice.
+    # Exact when sequential; best-effort under concurrency (the get/set is a
+    # check-then-act, so two simultaneous identical misses can both run).
     comp = None
     key = None
     if cache is not None:
@@ -66,20 +68,29 @@ def run_task(suite, task, model_id, default_provider, options,
             comp = provider.complete(model, messages, options=options)
         except Exception as exc:
             return TaskResult(suite=suite.name, task_id=task.id, model=full_id,
-                              system=task.system, prompt=task.prompt, error=str(exc))
+                              system=task.system, prompt=task.prompt,
+                              tags=task.tags, error=str(exc))
         if cache is not None:
             cache[key] = comp
 
     judge_costs = []  # one entry per judge call, summed into the task's cost
     grades = []
-    for spec in task.graders:
-        if deterministic_only and not is_deterministic(spec):
-            continue
-        judge_fns = None
-        if spec.get("type") == "llm_judge":
-            judge_fns = [_make_judge_fn(jid, default_provider, judge_costs.append)
-                         for jid in _judge_model_ids(spec, model_id)]
-        grades.append(run_grader(spec, comp.text, judge_fns=judge_fns))
+    try:
+        for spec in task.graders:
+            if deterministic_only and not is_deterministic(spec):
+                continue
+            judge_fns = None
+            if spec.get("type") == "llm_judge":
+                judge_fns = [_make_judge_fn(jid, default_provider, judge_costs.append)
+                             for jid in _judge_model_ids(spec, model_id)]
+            grades.append(run_grader(spec, comp.text, judge_fns=judge_fns))
+    except Exception as exc:
+        # A grader/judge failure (e.g. a judge network error, or a bad judge
+        # score) must not abort the whole run -- degrade this one task to an
+        # error, exactly like a primary-model-call failure.
+        return TaskResult(suite=suite.name, task_id=task.id, model=full_id,
+                          system=task.system, prompt=task.prompt, output=comp.text,
+                          tags=task.tags, error=f"grading failed: {exc}")
 
     judge_cost = round(sum(judge_costs), 6)
     if cached:
@@ -106,6 +117,7 @@ def run_task(suite, task, model_id, default_provider, options,
         latency_s=latency,
         grades=grades,
         cached=cached,
+        tags=task.tags,
     )
 
 
@@ -145,6 +157,7 @@ def _run_task_sampled(suite, task, model_id, default_provider, options,
         error=first.error if all(r.error for r in runs) else None,
         samples=repeat,
         pass_fraction=pass_fraction,
+        tags=first.tags,
     )
 
 
@@ -161,7 +174,8 @@ def run_suites(suites, config, cli_models=None, deterministic_only=False,
 
     `cache` (bool) memoizes identical (model, messages, options) completions for
     the duration of the run, so duplicate calls aren't paid for twice. Bypassed
-    under `repeat > 1`.
+    under `repeat > 1`. Dedup is exact when sequential; under `workers > 1` it's
+    best-effort (two identical calls launched at the same instant may both run).
 
     `max_cost` is an optional USD budget. It's a soft cap: no new task is started
     once cumulative spend has reached the budget. With `workers > 1`, up to

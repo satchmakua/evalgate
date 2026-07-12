@@ -77,3 +77,11 @@ def test_honors_retry_after_header(monkeypatch):
     slept = []
     post_with_retries("http://x", sleep=slept.append)
     assert slept == [2.0]
+
+
+def test_retry_after_is_clamped_to_max_delay(monkeypatch):
+    # a hostile / huge Retry-After must not hang the worker for an hour
+    _patch_post(monkeypatch, [FakeResp(429, headers={"Retry-After": "3600"}), FakeResp(200)])
+    slept = []
+    post_with_retries("http://x", max_delay=8.0, sleep=slept.append)
+    assert slept == [8.0]  # clamped to max_delay, not 3600

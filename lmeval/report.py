@@ -126,6 +126,39 @@ def _flaky_md(results):
     )
 
 
+def _tag_rows(results):
+    """Pass rates grouped by (tag, model) -- a cross-suite capability view.
+
+    A task with several tags contributes to each. Empty until tasks are tagged.
+    """
+    groups = {}
+    for r in results:
+        for tag in r.tags:
+            groups.setdefault((tag, r.model), []).append(r)
+    rows = []
+    for (tag, model), rs in sorted(groups.items()):
+        verdicts = [x.verdict for x in rs if x.verdict is not None]
+        passed = sum(1 for v in verdicts if v)
+        lo, hi = _wilson(passed, len(verdicts))
+        rows.append({
+            "tag": tag, "model": model, "tasks": len(rs), "passed": passed,
+            "pass_rate": round(passed / len(verdicts), 4) if verdicts else None,
+            "pass_rate_lo": lo, "pass_rate_hi": hi,
+        })
+    return rows
+
+
+def _tags_md(results):
+    rows = _tag_rows(results)
+    if not rows:
+        return ""
+    header = "| tag | model | tasks | pass | 95% CI |"
+    sep = "| --- | --- | --- | --- | --- |"
+    body = [f"| {r['tag']} | {r['model']} | {r['tasks']} | {r['pass_rate']} "
+            f"| [{r['pass_rate_lo']}, {r['pass_rate_hi']}] |" for r in rows]
+    return "\n".join([header, sep, *body])
+
+
 # ---- HTML dashboard ---------------------------------------------------------
 # A self-contained page (inline CSS/JS, no dependencies) for browsing a run.
 # Everything model-derived is escaped -- outputs routinely contain markup.
@@ -228,6 +261,18 @@ def _html_report(rows, results, stamp):
         "</tr>"
         for r in rows
     ) or "<tr><td colspan='9'>no results</td></tr>"
+    tag_data = _tag_rows(results)
+    tag_section = ""
+    if tag_data:
+        trows = "".join(
+            "<tr>"
+            f"<td>{_esc(r['tag'])}</td><td>{_esc(r['model'])}</td>"
+            f"<td class='num'>{r['tasks']}</td><td class='num'>{_pass_cell(r)}</td>"
+            "</tr>" for r in tag_data)
+        tag_section = (
+            "<h2>Tags</h2><table class='summary'><thead><tr>"
+            "<th>tag</th><th>model</th><th>tasks</th><th>pass</th>"
+            f"</tr></thead><tbody>{trows}</tbody></table>")
     tasks = "".join(_task_row_html(r) for r in results)
     return f"""<!doctype html>
 <html lang="en"><head><meta charset="utf-8">
@@ -241,6 +286,7 @@ def _html_report(rows, results, stamp):
 <th>suite</th><th>model</th><th>tasks</th><th>pass</th><th>judge</th>
 <th>cost</th><th>judge cost</th><th>p50 s</th><th>p95 s</th>
 </tr></thead><tbody>{summary}</tbody></table>
+{tag_section}
 <h2>Tasks</h2>
 <input id="filter" placeholder="filter tasks (suite, id, model, text)…" oninput="_filter()">
 <table class="tasks" id="tasks"><thead><tr>
@@ -262,14 +308,17 @@ def write_reports(results, out_dir):
         {"summary": rows, "results": [asdict(r) for r in results]}, indent=2))
 
     csv_path = out / f"summary-{stamp}.csv"
-    with open(csv_path, "w", newline="") as f:
+    with open(csv_path, "w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=SUMMARY_COLS)
         writer.writeheader()
         writer.writerows(rows)
 
     md_path = out / f"summary-{stamp}.md"
-    sections = [f"# Eval run -- {stamp}", _md_table(rows),
-                "## Failures", _failures_md(results)]
+    sections = [f"# Eval run -- {stamp}", _md_table(rows)]
+    tags = _tags_md(results)
+    if tags:
+        sections += ["## Tags", tags]
+    sections += ["## Failures", _failures_md(results)]
     flaky = _flaky_md(results)
     if flaky:
         sections += ["## Flaky tasks", flaky]

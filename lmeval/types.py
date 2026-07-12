@@ -37,6 +37,7 @@ class Task:
     system: Optional[str] = None
     graders: list = field(default_factory=list)
     expected: Any = None
+    tags: list = field(default_factory=list)
 
 
 @dataclass
@@ -72,6 +73,7 @@ class TaskResult:
     samples: int = 1
     pass_fraction: Optional[float] = None
     cached: bool = False
+    tags: list = field(default_factory=list)
 
     @property
     def verdict(self) -> Optional[bool]:

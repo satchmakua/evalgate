@@ -226,6 +226,46 @@ def test_cache_bypassed_under_repeat(monkeypatch):
     assert len(fake.calls) == 3  # repeated sampling always makes real calls
 
 
+def test_grader_exception_becomes_task_error_not_run_abort(monkeypatch):
+    # a judge that raises must degrade to a task error, not abort the whole run
+    class JudgeBoom:
+        def __init__(self):
+            self.calls = []
+
+        def complete(self, model, messages, options=None):
+            self.calls.append(messages)
+            if "RUBRIC" in messages[-1]["content"]:   # this is a judge call
+                raise RuntimeError("judge down")
+            return Completion(text="positive", model=model, provider="fake",
+                              prompt_tokens=5, completion_tokens=1, latency_s=0.01)
+
+    _use(monkeypatch, JudgeBoom())
+    task = Task(id="t", prompt="x", graders=[
+        {"type": "llm_judge", "rubric": "r", "judge_model": "openai:gpt-4o"}])
+    suite = Suite(name="s", tasks=[task], models=["openai:gpt-4o"])
+    results = run_suites([suite], {"default_provider": "ollama", "model_options": {}})
+    assert len(results) == 1                       # run completed, not aborted
+    r = results[0]
+    assert r.error is not None and "grading failed" in r.error
+    assert r.verdict is False
+    assert r.output == "positive"                  # the model output is preserved
+
+
+def test_task_result_carries_tags(monkeypatch):
+    _use(monkeypatch, FakeProvider(text="positive"))
+    task = Task(id="t", prompt="x", tags=["reasoning"], graders=[_contains("positive")])
+    r = run_task(Suite(name="s", tasks=[task]), task, "openai:gpt-4o", "ollama", options={})
+    assert r.tags == ["reasoning"]
+
+
+def test_tags_survive_repeated_sampling(monkeypatch):
+    _use(monkeypatch, FakeProvider(text="positive"))
+    task = Task(id="t", prompt="x", tags=["reasoning"], graders=[_contains("positive")])
+    suite = Suite(name="s", tasks=[task], models=["openai:gpt-4o"])
+    r = run_suites([suite], {"default_provider": "ollama", "model_options": {}}, repeat=3)[0]
+    assert r.tags == ["reasoning"]  # preserved through the majority-vote aggregate
+
+
 def test_concurrency_runs_all_tasks_in_order(monkeypatch):
     _use(monkeypatch, FakeProvider(text="positive"))
     tasks = [Task(id=f"t{i}", prompt="x", graders=[_contains("positive")]) for i in range(6)]

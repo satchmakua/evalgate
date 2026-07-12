@@ -82,6 +82,24 @@ def test_llm_judge_ensemble_skips_unparseable_members():
     assert r.passed is True
 
 
+def test_llm_judge_skips_non_numeric_score():
+    # a judge returning valid JSON but a non-numeric score must be skipped, not crash
+    r = run_grader(
+        {"type": "llm_judge", "rubric": "x", "pass_threshold": 4}, "out",
+        judge_fn=lambda p: '{"score": "N/A", "rationale": "bad"}',
+    )
+    assert r.passed is None
+
+
+def test_llm_judge_tolerates_trailing_braces():
+    # a valid JSON object followed by prose containing braces still parses
+    r = run_grader(
+        {"type": "llm_judge", "rubric": "x", "pass_threshold": 4}, "out",
+        judge_fn=lambda p: '{"score": 5, "rationale": "ok"}. Note: use {curly} braces.',
+    )
+    assert r.score == 5.0 and r.passed is True
+
+
 def test_is_deterministic():
     assert is_deterministic({"type": "contains"}) is True
     assert is_deterministic({"type": "llm_judge"}) is False

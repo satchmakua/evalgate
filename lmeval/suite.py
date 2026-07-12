@@ -20,6 +20,7 @@ def load_suites(path, only=None):
         name = raw.get("name", f.stem)
         if only and name not in only:
             continue
+        suite_tags = raw.get("tags", []) or []
         tasks = [
             Task(
                 id=t["id"],
@@ -27,6 +28,8 @@ def load_suites(path, only=None):
                 system=t.get("system"),
                 graders=t.get("graders", []),
                 expected=t.get("expected"),
+                # suite-level tags apply to every task, plus the task's own
+                tags=list(dict.fromkeys([*suite_tags, *(t.get("tags", []) or [])])),
             )
             for t in raw.get("tasks", [])
         ]

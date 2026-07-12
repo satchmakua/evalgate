@@ -10,6 +10,7 @@ import threading
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
 from lmeval import runner as runner_mod
+from lmeval.providers.anthropic import AnthropicProvider
 from lmeval.providers.bedrock import BedrockProvider, sigv4_headers
 from lmeval.providers.gemini import GeminiProvider
 from lmeval.providers.openai import OpenAIProvider
@@ -75,6 +76,36 @@ class StubServer:
         self._httpd.server_close()
 
 
+def _anthropic_body(content, input_tokens=8, output_tokens=2):
+    return {"content": [{"type": "text", "text": content}],
+            "usage": {"input_tokens": input_tokens, "output_tokens": output_tokens}}
+
+
+def test_anthropic_adapter_end_to_end(monkeypatch):
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-test")
+    with StubServer([(200, _anthropic_body("positive"))]) as stub:
+        provider = AnthropicProvider(base_url=stub.base_url)
+        monkeypatch.setattr(runner_mod, "get_provider", lambda name, **kw: provider)
+        task = Task(id="t", prompt="classify: great!", system="be terse",
+                    graders=[{"type": "contains", "any_of": ["positive"]}])
+        suite = Suite(name="s", tasks=[task], models=["anthropic:claude-haiku-4-5"])
+        results = run_suites([suite], {"default_provider": "ollama", "model_options": {}})
+
+    r = results[0]
+    assert r.output == "positive"
+    assert r.verdict is True
+    assert (r.prompt_tokens, r.completion_tokens) == (8, 2)
+    assert r.cost_usd > 0  # priced from PRICING for anthropic:claude-haiku-4-5
+
+    sent = stub.requests[0]
+    assert "/messages" in sent["path"]
+    assert sent["headers"]["x-api-key"] == "sk-ant-test"
+    assert sent["headers"]["anthropic-version"] == "2023-06-01"
+    assert sent["body"]["model"] == "claude-haiku-4-5"
+    assert sent["body"]["system"] == "be terse"       # hoisted to top-level field
+    assert sent["body"]["messages"][0]["role"] == "user"
+
+
 def test_openai_adapter_end_to_end(monkeypatch):
     monkeypatch.setenv("OPENAI_API_KEY", "test-key")
     with StubServer([(200, _openai_body("positive"))]) as stub:
@@ -108,6 +139,14 @@ def test_openai_adapter_retries_over_socket(monkeypatch):
 
     assert comp.text == "ok"
     assert len(stub.requests) == 2  # adapter retried after the 503
+
+
+def test_openai_adapter_degrades_on_empty_choices(monkeypatch):
+    monkeypatch.setenv("OPENAI_API_KEY", "k")
+    with StubServer([(200, {"choices": [], "usage": {}})]) as stub:
+        provider = OpenAIProvider(base_url=stub.base_url)
+        comp = provider.complete("gpt-4o", [{"role": "user", "content": "hi"}])
+    assert comp.text == ""  # empty completion, not a crash (like the sibling adapters)
 
 
 def _gemini_body(content, prompt_tokens=7, completion_tokens=2):
@@ -171,6 +210,20 @@ def test_sigv4_matches_aws_get_vanilla_vector():
     assert headers["X-Amz-Date"] == "20150830T123600Z"
 
 
+def test_sigv4_matches_aws_get_utf8_vector():
+    # Second AWS known-answer, exercising path encoding: raw "/ሴ" must be
+    # URI-encoded to "/%E1%88%B4" in the canonical request.
+    headers = sigv4_headers(
+        "GET", "https://example.amazonaws.com/ሴ",
+        region="us-east-1", service="service",
+        access_key="AKIDEXAMPLE",
+        secret_key="wJalrXUtnFEMI/K7MDENG+bPxRfiCYEXAMPLEKEY",
+        body=b"", amz_date="20150830T123600Z",
+    )
+    assert headers["Authorization"].endswith(
+        "Signature=8318018e0b0f223aa2bbf98705b62bb787dc9c0e678f255a891fd03141be5d85")
+
+
 def test_sigv4_includes_session_token_when_present():
     headers = sigv4_headers(
         "POST", "https://bedrock-runtime.us-east-1.amazonaws.com/model/m/invoke",
@@ -212,3 +265,16 @@ def test_bedrock_adapter_end_to_end(monkeypatch):
     assert sent["body"]["anthropic_version"] == "bedrock-2023-05-31"
     assert sent["body"]["system"] == "be terse"
     assert sent["body"]["messages"][0]["role"] == "user"
+
+
+def test_bedrock_percent_encodes_colon_in_model_id(monkeypatch):
+    monkeypatch.setenv("AWS_ACCESS_KEY_ID", "AKID")
+    monkeypatch.setenv("AWS_SECRET_ACCESS_KEY", "secret")
+    with StubServer([(200, _bedrock_body("ok"))]) as stub:
+        provider = BedrockProvider(base_url=stub.base_url)
+        provider.complete("anthropic.claude-3-5-sonnet-20241022-v2:0",
+                          [{"role": "user", "content": "hi"}])
+    path = stub.requests[0]["path"]
+    # the ':' is percent-encoded on the wire, matching the signed canonical URI
+    assert "v2%3A0/invoke" in path
+    assert "v2:0/invoke" not in path

@@ -34,13 +34,15 @@ def sigv4_headers(method, url, region, access_key, secret_key, body=b"",
     """Return SigV4 auth headers (Authorization, X-Amz-Date, ...) for a request.
 
     `amz_date` (YYYYMMDDTHHMMSSZ) is injectable for testing; it defaults to now
-    (UTC). The URL's path must already be canonically encoded (the caller does
-    this for the model id), and query strings are assumed empty -- which holds
-    for the Bedrock invoke endpoint.
+    (UTC). The canonical URI is the path URI-encoded with quote(): for non-S3
+    services (Bedrock) AWS encodes the path a second time beyond the wire form,
+    so the caller sends a percent-encoded model id and this re-encodes it (the
+    '%' becomes '%25'), matching botocore. Query strings are assumed empty, which
+    holds for the Bedrock invoke endpoint.
     """
     parsed = urlparse(url)
     host = parsed.netloc
-    canonical_uri = parsed.path or "/"
+    canonical_uri = quote(parsed.path or "/", safe="/~")
     canonical_qs = parsed.query
     if amz_date is None:
         amz_date = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")

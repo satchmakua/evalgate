@@ -64,7 +64,10 @@ to `results/`: a machine-readable `run-*.json`, `summary-*.csv` and
 (the exact input sent, the model output, and the grades), and a self-contained
 `dashboard-*.html` you can open in a browser to scan and filter every result.
 The `summary-*.md` also carries a **Failures** section listing each failing task
-with its prompt/output preview and the specific graders that failed.
+with its prompt/output preview and the specific graders that failed. When tasks
+carry tags (set per-task or per-suite in the YAML), the reports add a **Tags**
+breakdown — pass rate per (tag, model) across suites, so you can see how a model
+does on, say, all `reasoning` tasks.
 
 ## Regression gating
 
@@ -124,7 +127,8 @@ Pass `--cache` to reuse the result of any identical (model, prompt, options)
 call within a run instead of paying for it twice — useful when the same prompt
 recurs across suites. Cached tasks report $0 cost and ~0 latency and are marked
 `cached`; the cache is skipped under `--repeat` (repeated sampling must make
-real calls to measure variance).
+real calls to measure variance). Dedup is exact when running sequentially; under
+`--concurrency` it's best-effort.
 
 ## Adding a suite
 
@@ -134,8 +138,10 @@ Drop a YAML file in `suites/`:
 name: my-suite
 description: what this checks
 models: [ollama:llama3.1:8b]      # optional; falls back to config defaults
+tags: [smoke]                     # optional; applied to every task in the suite
 tasks:
   - id: my-task
+    tags: [reasoning]             # optional; merged with the suite's tags
     system: optional system prompt
     prompt: the user turn
     graders:
@@ -143,7 +149,7 @@ tasks:
         any_of: ["expected", "word"]
         ignorecase: true
       - type: llm_judge
-        judge_model: ollama:llama3.1:8b
+        judge_model: ollama:llama3.1:8b   # or a list to ensemble: [modelA, modelB]
         pass_threshold: 4
         rubric: |
           Score 1-5 ...

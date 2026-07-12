@@ -37,9 +37,13 @@ class OpenAIProvider(Provider):
             max_retries=self.max_retries,
         )
         data = resp.json()
+        choices = data.get("choices") or []
+        # degrade to "" on empty choices / null content (e.g. content-filter),
+        # matching the anthropic/gemini adapters instead of crashing
+        text = (choices[0].get("message", {}).get("content") or "") if choices else ""
         usage = data.get("usage", {})
         return Completion(
-            text=data["choices"][0]["message"]["content"],
+            text=text,
             model=model,
             provider=self.name,
             prompt_tokens=usage.get("prompt_tokens", 0),

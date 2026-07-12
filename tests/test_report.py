@@ -1,7 +1,7 @@
 import json
 from pathlib import Path
 
-from lmeval.report import summarize, write_reports
+from lmeval.report import _tag_rows, summarize, write_reports
 from lmeval.types import GradeResult, TaskResult
 
 
@@ -67,6 +67,14 @@ def test_summarize_sums_judge_cost():
 
 def test_summarize_empty():
     assert summarize([]) == []
+
+
+def test_csv_report_handles_non_ascii(tmp_path):
+    # a non-cp1252 model name must not crash the CSV writer (utf-8 encoding)
+    results = [TaskResult(suite="s", task_id="a", model="モデル",
+                          grades=[GradeResult("c", passed=True)])]
+    paths = write_reports(results, tmp_path)
+    assert "モデル" in Path(paths["csv"]).read_text(encoding="utf-8")
 
 
 def test_write_reports_emits_all_artifacts(tmp_path):
@@ -172,6 +180,38 @@ def test_md_report_no_flaky_section_when_consistent(tmp_path):
                           grades=[GradeResult("c", passed=True)])]
     md = Path(write_reports(results, tmp_path)["md"]).read_text(encoding="utf-8")
     assert "## Flaky tasks" not in md
+
+
+def test_tag_breakdown_groups_by_tag_and_model():
+    results = [
+        TaskResult(suite="s", task_id="a", model="m", tags=["reasoning"],
+                   grades=[GradeResult("c", passed=True)]),
+        TaskResult(suite="s", task_id="b", model="m", tags=["reasoning"],
+                   grades=[GradeResult("c", passed=False)]),
+        TaskResult(suite="s", task_id="c", model="m", tags=["safety"],
+                   grades=[GradeResult("c", passed=True)]),
+    ]
+    rows = {(r["tag"], r["model"]): r for r in _tag_rows(results)}
+    assert rows[("reasoning", "m")]["tasks"] == 2
+    assert rows[("reasoning", "m")]["pass_rate"] == 0.5
+    assert rows[("safety", "m")]["pass_rate"] == 1.0
+
+
+def test_md_and_dashboard_include_tags_when_present(tmp_path):
+    results = [TaskResult(suite="s", task_id="a", model="m", tags=["reasoning"],
+                          grades=[GradeResult("c", passed=True)])]
+    paths = write_reports(results, tmp_path)
+    md = Path(paths["md"]).read_text(encoding="utf-8")
+    page = Path(paths["html"]).read_text(encoding="utf-8")
+    assert "## Tags" in md and "reasoning" in md
+    assert "<h2>Tags</h2>" in page and "reasoning" in page
+
+
+def test_no_tags_section_when_untagged(tmp_path):
+    results = [TaskResult(suite="s", task_id="a", model="m",
+                          grades=[GradeResult("c", passed=True)])]
+    md = Path(write_reports(results, tmp_path)["md"]).read_text(encoding="utf-8")
+    assert "## Tags" not in md
 
 
 def test_html_dashboard_is_self_contained_and_escaped(tmp_path):
