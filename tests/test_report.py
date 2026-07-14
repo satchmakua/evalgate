@@ -1,8 +1,8 @@
 import json
 from pathlib import Path
 
-from lmeval.report import _tag_rows, summarize, write_reports
-from lmeval.types import GradeResult, TaskResult
+from evalgate.report import _tag_rows, summarize, write_reports
+from evalgate.types import GradeResult, TaskResult
 
 
 def test_summarize_groups_and_counts():

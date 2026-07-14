@@ -7,7 +7,7 @@ default_provider: ollama
 # Format is "provider:model". Local Ollama models cost nothing.
 default_models:
   - ollama:llama3.1:8b
-  - ollama:qwen2.5:7b
+  - ollama:qwen2.5:7b-instruct
 
 # Sampling options. temperature 0 keeps eval runs as reproducible as possible.
 model_options:

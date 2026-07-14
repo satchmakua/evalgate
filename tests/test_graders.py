@@ -1,4 +1,4 @@
-from lmeval.graders import is_deterministic, run_grader
+from evalgate.graders import is_deterministic, run_grader
 
 
 def test_contains_any_ignorecase():
@@ -98,6 +98,45 @@ def test_llm_judge_tolerates_trailing_braces():
         judge_fn=lambda p: '{"score": 5, "rationale": "ok"}. Note: use {curly} braces.',
     )
     assert r.score == 5.0 and r.passed is True
+
+
+def _always_prefers(winner, loser):
+    """A judge that prefers `winner` over `loser` regardless of A/B position."""
+    def judge(prompt):
+        return '{"winner": "A"}' if prompt.index(winner) < prompt.index(loser) else '{"winner": "B"}'
+    return judge
+
+
+def test_pairwise_prefers_output_across_swap():
+    r = run_grader({"type": "pairwise", "reference": "REF", "require": "win"},
+                   "OUT", judge_fn=_always_prefers("OUT", "REF"))
+    assert r.passed is True
+    assert "output" in r.detail
+
+
+def test_pairwise_position_bias_collapses_to_tie():
+    # a judge that ALWAYS picks position A (pure position bias) must not yield a win
+    r = run_grader({"type": "pairwise", "reference": "REF", "require": "win"},
+                   "OUT", judge_fn=lambda p: '{"winner": "A"}')
+    assert r.passed is False        # the swap caught the bias -> tie, not a spurious win
+    assert "tie" in r.detail
+
+
+def test_pairwise_reference_preferred_fails_default_bar():
+    r = run_grader({"type": "pairwise", "reference": "REF"},  # default require=tie
+                   "OUT", judge_fn=_always_prefers("REF", "OUT"))
+    assert r.passed is False        # output judged worse than the reference
+
+
+def test_pairwise_tie_passes_default_bar():
+    r = run_grader({"type": "pairwise", "reference": "REF"}, "OUT",
+                   judge_fn=lambda p: '{"winner": "tie"}')
+    assert r.passed is True         # not worse than the reference -> meets the default bar
+    assert "tie" in r.detail
+
+
+def test_pairwise_no_judge_is_none():
+    assert run_grader({"type": "pairwise", "reference": "x"}, "y").passed is None
 
 
 def test_is_deterministic():

@@ -1,8 +1,8 @@
 import pytest
 import requests
 
-from lmeval.providers import _http
-from lmeval.providers._http import post_with_retries
+from evalgate.providers import _http
+from evalgate.providers._http import post_with_retries
 
 
 class FakeResp:

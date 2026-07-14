@@ -1,8 +1,8 @@
 import pytest
 
-from lmeval.providers import get_provider, parse_model_id
-from lmeval.providers.anthropic import AnthropicProvider
-from lmeval.providers.ollama import OllamaProvider
+from evalgate.providers import get_provider, parse_model_id
+from evalgate.providers.anthropic import AnthropicProvider
+from evalgate.providers.ollama import OllamaProvider
 
 
 def test_parse_prefixed_id():

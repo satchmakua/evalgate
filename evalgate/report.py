@@ -277,7 +277,7 @@ def _html_report(rows, results, stamp):
     return f"""<!doctype html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>lmeval run {_esc(stamp)}</title>
+<title>evalgate run {_esc(stamp)}</title>
 <style>{_CSS}</style>
 </head><body>
 <h1>Eval run <span class="stamp">{_esc(stamp)}</span></h1>

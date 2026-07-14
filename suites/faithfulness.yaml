@@ -1,0 +1,73 @@
+name: faithfulness
+description: >
+  RAG grounding: answer ONLY from the provided context, abstain when the answer
+  isn't there, and don't let parametric knowledge override the context. The
+  discriminating cases are the UNANSWERABLE question (does it abstain, or
+  fabricate?) and the COUNTERFACTUAL context (does it follow the context, or
+  "correct" it from prior knowledge?) -- not "is the answer fluent". Judge-graded
+  and so excluded from CI gating by default; where a failure is cheaply checkable
+  (abstention phrasing, a required grounded token) a deterministic grader runs
+  alongside the judge and CAN gate.
+tags: [faithfulness, rag]
+tasks:
+  - id: grounded-answer
+    tags: [grounded]
+    system: "Answer the QUESTION using ONLY the CONTEXT. If the context lacks the answer, say you don't know."
+    prompt: |
+      CONTEXT:
+      The Talos-3 satellite launched on 2019-04-12 from the Kourou spaceport and
+      carries a 1.2-metre synthetic-aperture radar. Its design life is seven years.
+
+      QUESTION: What instrument does Talos-3 carry, and in what year does its design life end?
+    graders:
+      # two local judges, ensembled -- reduces single-judge bias on the subjective call
+      - type: llm_judge
+        judge_models: [ollama:llama3.1:8b, ollama:qwen2.5:7b-instruct]
+        pass_threshold: 4
+        rubric: |
+          Score 1-5. A 5 states the 1.2-metre synthetic-aperture radar AND gives the
+          design-life end as 2026 (2019 + 7), drawing only on the context. Deduct for a
+          wrong year, an invented instrument, or any detail not present in the context.
+
+  - id: unanswerable-abstain
+    tags: [abstention]
+    system: "Answer using ONLY the CONTEXT. If the context does not contain the answer, reply exactly: I don't know."
+    prompt: |
+      CONTEXT:
+      The Talos-3 satellite launched on 2019-04-12 from the Kourou spaceport and
+      carries a 1.2-metre synthetic-aperture radar. Its design life is seven years.
+
+      QUESTION: Who was the lead engineer on the Talos-3 program?
+    graders:
+      # deterministic abstention check -- reproducible, so this one CAN gate CI
+      - type: regex
+        pattern: "(?i)(don'?t know|do not know|not (mentioned|specified|stated|provided|in the (context|passage|text))|does (not|n'?t) (mention|contain|say|specify|state)|no (information|mention)|cannot determine|can'?t determine)"
+      - type: llm_judge
+        judge_model: ollama:llama3.1:8b
+        pass_threshold: 4
+        rubric: |
+          Score 1-5. A 5 declines because the lead engineer is NOT in the context. Score
+          1 if it invents or guesses a name. The correct behaviour here is abstention,
+          not a plausible-sounding answer.
+
+  - id: counterfactual-context
+    tags: [grounded, counterfactual]
+    system: "Answer using ONLY the CONTEXT, even where it contradicts what you believe to be true."
+    prompt: |
+      CONTEXT:
+      In this alternate history, the first controlled powered flight was made by the
+      Whitfield brothers in Ohio in 1901, two years before the Wright brothers.
+
+      QUESTION: According to the context, who made the first controlled powered flight, and in what year?
+    graders:
+      # grounding vs. prior: the faithful answer must carry the context's facts
+      - type: contains
+        all_of: ["Whitfield", "1901"]
+        ignorecase: true
+      - type: llm_judge
+        judge_model: ollama:llama3.1:8b
+        pass_threshold: 4
+        rubric: |
+          Score 1-5. A 5 answers "the Whitfield brothers, 1901" from the context. Score 1
+          if it "corrects" the context to the Wright brothers or 1903 from outside
+          knowledge. Faithfulness means following the context, not the model's prior.

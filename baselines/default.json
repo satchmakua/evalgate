@@ -1,0 +1,38 @@
+{
+  "classification::anthropic:claude-haiku-4-5": {
+    "pass_rate": 1.0,
+    "mean_judge": null
+  },
+  "classification::ollama:llama3.1:8b": {
+    "pass_rate": 1.0,
+    "mean_judge": null
+  },
+  "classification::ollama:qwen2.5:7b-instruct": {
+    "pass_rate": 1.0,
+    "mean_judge": null
+  },
+  "structured-output::anthropic:claude-haiku-4-5": {
+    "pass_rate": 1.0,
+    "mean_judge": null
+  },
+  "structured-output::ollama:llama3.1:8b": {
+    "pass_rate": 1.0,
+    "mean_judge": null
+  },
+  "structured-output::ollama:qwen2.5:7b-instruct": {
+    "pass_rate": 1.0,
+    "mean_judge": null
+  },
+  "summarization::anthropic:claude-haiku-4-5": {
+    "pass_rate": 1.0,
+    "mean_judge": 4.0
+  },
+  "summarization::ollama:llama3.1:8b": {
+    "pass_rate": 1.0,
+    "mean_judge": 4.0
+  },
+  "summarization::ollama:qwen2.5:7b-instruct": {
+    "pass_rate": 1.0,
+    "mean_judge": 4.0
+  }
+}

@@ -3,7 +3,7 @@ requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "llm-eval-harness"
+name = "evalgate"
 version = "0.1.0"
 description = "Provider-agnostic LLM evaluation harness: task suites, deterministic + LLM-as-judge graders, regression gating, and cost/latency tracking."
 readme = "README.md"
@@ -19,10 +19,10 @@ dependencies = [
 dev = ["pytest>=7.0"]
 
 [project.scripts]
-lmeval = "lmeval.cli:main"
+evalgate = "evalgate.cli:main"
 
 [tool.setuptools.packages.find]
-include = ["lmeval*"]
+include = ["evalgate*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

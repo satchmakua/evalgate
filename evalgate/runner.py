@@ -42,7 +42,7 @@ def resolve_models(suite, config, cli_models):
 
 
 def run_task(suite, task, model_id, default_provider, options,
-             deterministic_only=False, cache=None):
+             deterministic_only=False, cache=None, judge_override=None):
     prov_name, model = parse_model_id(model_id, default_provider)
     full_id = f"{prov_name}:{model}"
     provider = get_provider(prov_name)
@@ -80,10 +80,12 @@ def run_task(suite, task, model_id, default_provider, options,
             if deterministic_only and not is_deterministic(spec):
                 continue
             judge_fns = None
-            if spec.get("type") == "llm_judge":
+            if spec.get("type") in ("llm_judge", "pairwise"):
+                ids = judge_override or _judge_model_ids(spec, model_id)
                 judge_fns = [_make_judge_fn(jid, default_provider, judge_costs.append)
-                             for jid in _judge_model_ids(spec, model_id)]
-            grades.append(run_grader(spec, comp.text, judge_fns=judge_fns))
+                             for jid in ids]
+            grades.append(run_grader(spec, comp.text, judge_fns=judge_fns,
+                                     task_input=task.prompt))
     except Exception as exc:
         # A grader/judge failure (e.g. a judge network error, or a bad judge
         # score) must not abort the whole run -- degrade this one task to an
@@ -122,7 +124,7 @@ def run_task(suite, task, model_id, default_provider, options,
 
 
 def _run_task_sampled(suite, task, model_id, default_provider, options,
-                      deterministic_only, repeat, cache=None):
+                      deterministic_only, repeat, cache=None, judge_override=None):
     """Run one task `repeat` times; collapse to a single majority-vote result.
 
     `repeat == 1` returns the single run unchanged. Otherwise the runs are
@@ -134,7 +136,7 @@ def _run_task_sampled(suite, task, model_id, default_provider, options,
     """
     run_cache = cache if repeat == 1 else None
     runs = [run_task(suite, task, model_id, default_provider, options,
-                     deterministic_only, cache=run_cache)
+                     deterministic_only, cache=run_cache, judge_override=judge_override)
             for _ in range(repeat)]
     if repeat == 1:
         return runs[0]
@@ -162,12 +164,17 @@ def _run_task_sampled(suite, task, model_id, default_provider, options,
 
 
 def run_suites(suites, config, cli_models=None, deterministic_only=False,
-               max_cost=None, workers=1, repeat=1, cache=False):
+               max_cost=None, workers=1, repeat=1, cache=False, judge_model=None):
     """Run every (suite, model, task) and collect results.
 
     `workers` runs that many tasks in parallel (default 1 = sequential). Each
     task is one HTTP call, so this is I/O-bound and parallelizes well; results
     are returned in suite/model/task order regardless of completion order.
+
+    `judge_model` (a list of `provider:model` ids) overrides the judge for every
+    `llm_judge` grader in the run, without editing the suite YAML -- so the same
+    outputs can be re-graded by a stronger judge. Judge quality dominates on
+    nuanced rubrics; a weak judge produces unreliable verdicts.
 
     `repeat` runs each task that many times and collapses the runs into one
     majority-vote verdict plus a `pass_fraction`, for measuring variance.
@@ -187,6 +194,7 @@ def run_suites(suites, config, cli_models=None, deterministic_only=False,
     default_provider = config.get("default_provider", "ollama")
     workers = max(1, workers)
     cache_store = {} if cache else None
+    judge_override = judge_model or None
 
     work = [(suite, model_id, task)
             for suite in suites
@@ -211,7 +219,7 @@ def run_suites(suites, config, cli_models=None, deterministic_only=False,
                 print(f"  {suite.name} :: {model_id} :: {task.id}")
                 future = pool.submit(_run_task_sampled, suite, task, model_id,
                                      default_provider, options, deterministic_only,
-                                     repeat, cache_store)
+                                     repeat, cache_store, judge_override)
                 pending[future] = next_idx
                 next_idx += 1
 

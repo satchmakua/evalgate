@@ -1,7 +1,7 @@
-from lmeval import runner as runner_mod
-from lmeval.pricing import cost_usd
-from lmeval.runner import resolve_models, run_suites, run_task
-from lmeval.types import Completion, Suite, Task
+from evalgate import runner as runner_mod
+from evalgate.pricing import cost_usd
+from evalgate.runner import resolve_models, run_suites, run_task
+from evalgate.types import Completion, Suite, Task
 
 
 class FakeProvider:
@@ -177,6 +177,27 @@ def test_judge_cost_zero_for_local_judge(monkeypatch):
     r = run_suites([suite], {"default_provider": "ollama", "model_options": {}})[0]
     assert r.judge_cost_usd == 0.0                     # local judge is free
     assert r.cost_usd == cost_usd("openai:gpt-4o", 10, 5)  # only the task model
+
+
+def test_judge_model_override_replaces_spec_judges(monkeypatch):
+    # --judge-model overrides the judge ids in the suite YAML, for all llm_judge graders
+    seen = []
+
+    class RecordingProvider:
+        def complete(self, model, messages, options=None):
+            seen.append(model)
+            return Completion(text='{"score": 5}', model=model, provider="fake",
+                              prompt_tokens=1, completion_tokens=1, latency_s=0.0)
+
+    monkeypatch.setattr(runner_mod, "get_provider", lambda name, **kw: RecordingProvider())
+    task = Task(id="t", prompt="x", graders=[
+        {"type": "llm_judge", "rubric": "r", "judge_model": "ollama:llama3.1:8b"}])
+    suite = Suite(name="s", tasks=[task], models=["openai:gpt-4o"])
+    run_suites([suite], {"default_provider": "ollama", "model_options": {}},
+               judge_model=["anthropic:claude-haiku-4-5"])
+    # the judge call used the override, not the suite's ollama judge
+    assert "claude-haiku-4-5" in seen
+    assert "llama3.1:8b" not in seen
 
 
 def test_judge_cost_sums_across_ensemble(monkeypatch):

@@ -1,6 +1,6 @@
 # Roadmap
 
-Planned work for llm-eval-harness, roughly in priority order, with the known
+Planned work for evalgate, roughly in priority order, with the known
 limitations that motivate it.
 
 ## Known limitations
@@ -43,10 +43,36 @@ limitations that motivate it.
 > cold-clone reproducible (`make demo` + CI) · polished surface · one positioning paragraph.
 
 **Hardening items:**
-- [ ] **H1 — Position + rename.** Add a "**why this vs promptfoo / Inspect AI / Braintrust / EleutherAI `lm-evaluation-harness`**" section; the defensible lane is *the compact, dependency-light, self-hostable, vendor-neutral, provider-agnostic (incl. local Ollama) Python harness you can read end-to-end and gate CI on — no SaaS, no Node, no account*. **Rename the package** to avoid the `lm-evaluation-harness` collision. *Accept:* README opens with positioning; package renamed.
-- [ ] **H2 — Show eval *taste*: ship hard suites.** A **faithfulness / RAG-grounding** suite and a **tool-use / agent** suite with thoughtfully designed rubrics, plus a small **red-team / jailbreak** suite (where the category's energy is). The *suites* should demonstrate judgment about *what's worth measuring*, not just that grading works. *Accept:* the three suites ship and run.
-- [ ] **H3 — Upgrade the judge.** Add **pairwise / preference** judging with a **position-swap** to control order bias; document why CI still gates only on deterministic graders. *Accept:* pairwise mode available + tested.
-- [ ] **H4 — The real comparison artifact.** Run **3 models on a non-trivial suite**; put the HTML dashboard screenshot at the top of the README. *Accept:* README leads with the real comparison.
-- [ ] **H5 — Per-tag / category breakdown** (already listed under *Near term*) — keep; it's the first thing a 200-case suite needs.
+- [x] **H1 — Position + rename.** Done 2026-07-13: README opens with a "why this
+  and not promptfoo / Inspect AI / Braintrust" section plus an EleutherAI
+  disambiguation note; package, CLI, and config renamed **lmeval → evalgate**
+  (105 tests green under the new name). *Remaining:* rename the GitHub repo
+  itself (`llm-eval-harness` → `evalgate`) — owner action.
+- [x] **H2 — Show eval *taste*: ship hard suites.** Done 2026-07-13. Shipped
+  `faithfulness` (abstention + counterfactual grounding), `tool-use` (selection
+  + arg-grounding via `json_schema`, decline/clarify by judge), and `red-team`
+  (refuse-harmful **and** don't-over-refuse, both axes tagged). All three ran
+  against 3 models and **discriminated** them (e.g. tool-use: Claude 0.75 vs
+  local 0.5). The run also surfaced a real methodology finding — the local 8B
+  judge mis-graded several nuanced cases — which motivated a swappable
+  **`--judge-model`** override (added + tested) and a Claude-judged reference
+  run. *Accept met:* suites ship and run.
+- [x] **H3 — Upgrade the judge.** Done 2026-07-14. Added a `pairwise` grader:
+  compares the output against a fixed `reference` and runs BOTH orderings, so a
+  position-biased judge collapses to a tie instead of a spurious win (`require:
+  win|tie`). Ships with a `preference` demo suite (ran live) and 5 unit tests
+  (incl. the position-bias→tie case). CI still gates only on deterministic
+  graders because pairwise, like `llm_judge`, is non-reproducible — documented in
+  the grader reference and the grader docstring. *Accept met.*
+- [x] **H4 — The real comparison artifact.** Done 2026-07-13: all 3 suites ×
+  3 models (llama3.1:8b, qwen2.5:7b-instruct, claude-haiku-4-5 live), ~$0.001
+  hosted spend. README now leads with the real table + what the run caught (an
+  under-specified task all three models failed identically — since fixed);
+  artifacts committed in `docs/example-run/`, post-fix snapshot in
+  `baselines/default.json`. *(Screenshot swapped for the committed HTML
+  dashboard + inline table — greppable and diffable beat a PNG.)*
+- [x] **H5 — Per-tag / category breakdown** — shipped: `tags` on tasks (task- and
+  suite-level, merged), pass rate + Wilson CI per (tag, model) in the Markdown
+  report and HTML dashboard.
 
 *(The "Known limitations" above — partial `seed` forwarding, judge token columns, no live-Bedrock run — remain valid and tracked; folding a live-AWS Bedrock smoke test into CI would close the last one.)*

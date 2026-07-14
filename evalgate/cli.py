@@ -21,7 +21,7 @@ def _load_config(path):
 
 def _add_common(ap):
     ap.add_argument("--suites", default="suites", help="suite file or directory")
-    ap.add_argument("--config", default="lmeval.config.yaml")
+    ap.add_argument("--config", default="evalgate.config.yaml")
     ap.add_argument("--models", nargs="*", help="override models (provider:model ...)")
     ap.add_argument("--only", nargs="*", help="limit to named suites")
     ap.add_argument("--deterministic-only", action="store_true",
@@ -34,6 +34,9 @@ def _add_common(ap):
                     help="run each task N times; verdict is a majority vote (default 1)")
     ap.add_argument("--cache", action="store_true",
                     help="reuse identical (model, prompt) completions within the run")
+    ap.add_argument("--judge-model", nargs="*",
+                    help="override the judge model(s) for all llm_judge graders "
+                         "(e.g. --judge-model anthropic:claude-haiku-4-5)")
 
 
 def _text_table(rows):
@@ -49,7 +52,7 @@ def _text_table(rows):
 
 
 def main(argv=None):
-    parser = argparse.ArgumentParser(prog="lmeval", description="LLM eval harness")
+    parser = argparse.ArgumentParser(prog="evalgate", description="LLM eval harness")
     sub = parser.add_subparsers(dest="cmd", required=True)
 
     p_run = sub.add_parser("run", help="run suites and write a report")
@@ -84,6 +87,7 @@ def main(argv=None):
         workers=args.concurrency,
         repeat=args.repeat,
         cache=args.cache,
+        judge_model=args.judge_model,
     )
 
     if args.cmd == "run":

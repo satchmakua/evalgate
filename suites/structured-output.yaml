@@ -17,7 +17,10 @@ tasks:
             phone: { type: string }
 
   - id: action-object
-    system: "Translate the request into ONE action, as JSON only."
+    # The schema below requires the keys `action` and `params` -- say so in the
+    # prompt. (The first real run caught this: all three models emitted valid
+    # JSON with invented key names because the shape was never stated.)
+    system: 'Translate the request into ONE action. Reply with ONLY JSON shaped as {"action": "<verb>", "params": {<details>}}.'
     prompt: "Schedule a meeting with Sam next Tuesday at 3pm about the budget."
     graders:
       - type: json_schema

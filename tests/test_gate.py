@@ -1,5 +1,5 @@
-from lmeval.gate import gate, save_baseline
-from lmeval.types import GradeResult, TaskResult
+from evalgate.gate import gate, save_baseline
+from evalgate.types import GradeResult, TaskResult
 
 
 def _result(passed):

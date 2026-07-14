@@ -1,4 +1,4 @@
-from lmeval.suite import load_suites
+from evalgate.suite import load_suites
 
 SUITE_YAML = """
 name: demo

@@ -1,0 +1,35 @@
+name: preference
+description: >
+  Pairwise / preference judging with a position-swap. Each task pins a fixed
+  REFERENCE answer; the model's answer is compared against it by a judge, run
+  BOTH ways (output first, then reference first). A preference only counts if it
+  survives the swap -- a judge that flips when the answers change position is
+  exhibiting position bias, and collapses to a tie rather than a spurious win.
+  Non-reproducible (a judge is in the loop), so excluded from CI gating like
+  `llm_judge`; run locally or on a schedule.
+tags: [preference, pairwise]
+tasks:
+  - id: beat-the-vague-reference
+    tags: [pairwise]
+    system: "Answer concretely and concisely."
+    prompt: "Why does adding an index speed up a database read, and when can it slow writes down?"
+    graders:
+      # deliberately weak reference -- a competent model should be preferred in BOTH orderings
+      - type: pairwise
+        judge_model: ollama:llama3.1:8b
+        require: win
+        criteria: "which answer is more accurate and specific about how an index speeds reads and costs writes"
+        reference: "Indexes make queries faster. They are good for performance and databases use them a lot."
+
+  - id: match-the-strong-reference
+    tags: [pairwise]
+    prompt: "In one sentence, state the CAP theorem."
+    graders:
+      # strong reference -- default bar (`require: tie`) passes if the model is *not worse*
+      - type: pairwise
+        judge_model: ollama:llama3.1:8b
+        criteria: "which one-sentence answer is more accurate about the CAP theorem"
+        reference: >-
+          The CAP theorem says a distributed data store cannot simultaneously guarantee
+          consistency, availability, and partition tolerance; under a network partition you
+          must trade off consistency against availability.

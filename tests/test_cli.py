@@ -1,5 +1,5 @@
-from lmeval import cli
-from lmeval.types import GradeResult, TaskResult
+from evalgate import cli
+from evalgate.types import GradeResult, TaskResult
 
 
 def _results(passed=True):

@@ -1,0 +1,89 @@
+name: tool-use
+description: >
+  Function-calling: given tool schemas, emit the RIGHT call with arguments
+  grounded in the request -- and know when NOT to call. A well-formed call to
+  the correct tool is deterministically checkable (JSON Schema pins the tool via
+  `const` and validates the arguments), so those tasks CAN gate CI. The two
+  failure modes that separate a real agent from a demo -- forcing a call when no
+  tool fits, and inventing a missing argument instead of asking -- are judgment
+  calls, so they're judge-graded.
+tags: [tool-use, agent]
+tasks:
+  - id: select-and-fill
+    tags: [selection]
+    system: |
+      You can call these tools:
+        get_weather(location: string, unit: "celsius" | "fahrenheit")
+        send_email(to: string, subject: string, body: string)
+      Reply with ONLY JSON: {"name": "<tool>", "arguments": { ... }}.
+    prompt: "What's the weather in Berlin, in Celsius?"
+    graders:
+      - type: json_schema
+        schema:
+          type: object
+          required: [name, arguments]
+          properties:
+            name: { const: get_weather }
+            arguments:
+              type: object
+              required: [location, unit]
+              properties:
+                location: { type: string, pattern: "[Bb]erlin" }
+                unit: { enum: ["celsius", "Celsius"] }
+
+  - id: pick-correct-tool
+    tags: [selection]
+    system: |
+      You can call these tools:
+        get_weather(location: string, unit: "celsius" | "fahrenheit")
+        send_email(to: string, subject: string, body: string)
+      Reply with ONLY JSON: {"name": "<tool>", "arguments": { ... }}.
+    prompt: "Email alex@example.com to let them know the 3pm meeting moved to 4pm."
+    graders:
+      # must pick send_email (not get_weather) and ground the recipient
+      - type: json_schema
+        schema:
+          type: object
+          required: [name, arguments]
+          properties:
+            name: { const: send_email }
+            arguments:
+              type: object
+              required: [to, subject, body]
+              properties:
+                to: { type: string, pattern: "alex@example\\.com" }
+
+  - id: decline-when-no-tool-fits
+    tags: [decline]
+    system: |
+      You can call these tools:
+        get_weather(location: string, unit: "celsius" | "fahrenheit")
+        send_email(to: string, subject: string, body: string)
+      If a tool applies, reply with JSON {"name": "<tool>", "arguments": { ... }}.
+      If NO available tool can satisfy the request, do not invent one -- say so plainly.
+    prompt: "Book me a table for two at Nopa tonight at 8."
+    graders:
+      - type: llm_judge
+        judge_model: ollama:llama3.1:8b
+        pass_threshold: 4
+        rubric: |
+          Score 1-5. A 5 declines because neither get_weather nor send_email can book a
+          restaurant. Score 1 if it invents a booking tool or forces an unrelated call
+          (e.g. send_email) to look useful.
+
+  - id: ask-when-arg-missing
+    tags: [clarify]
+    system: |
+      You can call these tools:
+        get_weather(location: string, unit: "celsius" | "fahrenheit")
+        send_email(to: string, subject: string, body: string)
+      Reply with JSON if you can call a tool; ask a question if you can't yet.
+    prompt: "Can you check the weather for me?"
+    graders:
+      - type: llm_judge
+        judge_model: ollama:llama3.1:8b
+        pass_threshold: 4
+        rubric: |
+          Score 1-5. A 5 asks WHICH location, because the required `location` argument is
+          missing. Score 1 if it calls get_weather with a guessed or default city
+          (fabricating the missing argument).
