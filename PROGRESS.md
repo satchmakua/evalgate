@@ -36,10 +36,11 @@ full run → baseline → gate loop has been exercised for real.
 - **Runner** — executes every (suite × model × task) into a `TaskResult`, with
   per-task fault isolation, optional parallelism (`--concurrency`, results kept
   in stable order), optional repeated sampling (`--repeat`, majority-vote
-  verdict + pass fraction), an optional in-run completion cache (`--cache`), an
-  optional `--judge-model` override that swaps the judge for every `llm_judge`
-  grader without editing suite YAML, and an optional `--max-cost` budget that
-  stops a run before it overspends (`evalgate/runner.py`).
+  verdict + pass fraction), an optional completion cache in memory (`--cache`)
+  or persisted to disk across runs (`--cache-dir`, `evalgate/cache.py`), an
+  optional `--judge-model` override that swaps the judge for every judge grader
+  without editing suite YAML, and an optional `--max-cost` budget that stops a
+  run before it overspends (`evalgate/runner.py`).
 - **Reporting** — per-(suite, model) summaries with pass rate (and a 95% Wilson
   confidence interval), mean judge score, token/cost totals, and p50/p95 latency
   (JSON, CSV, a browsable self-contained HTML dashboard, and a Markdown report
@@ -68,8 +69,8 @@ full run → baseline → gate loop has been exercised for real.
 - Provider registry and the `provider:model` parser (`tests/test_providers.py`).
 - HTTP retry/backoff helper (`tests/test_http_retry.py`).
 - Runner, including the cost-budget guardrail, repeated-sampling vote,
-  judge-cost tracking, in-run caching, and the `--judge-model` override
-  (`tests/test_runner.py`).
+  judge-cost tracking, in-run + cross-run disk caching, and the `--judge-model`
+  override (`tests/test_runner.py`, `tests/test_cache.py`).
 - CLI subcommands and exit codes (`tests/test_cli.py`).
 - End-to-end: the Anthropic, OpenAI, Gemini, and Bedrock adapters over a stub
   HTTP server, including retry/backoff and the SigV4 signer's known-answer

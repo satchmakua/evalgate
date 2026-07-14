@@ -1,5 +1,8 @@
 # eval run outputs (regenerated each run; never commit)
 results/
+# on-disk completion cache (--cache-dir); local, regenerable, never commit
+.evalcache/
+*.cache/
 # committed baselines are kept (see baselines/), only ignore stray local ones
 *.local.json
 

@@ -54,11 +54,14 @@ def test_run_forwards_run_options(tmp_path, monkeypatch):
 
     monkeypatch.setattr(cli, "run_suites", fake_run)
     cli.main(["run", *_common(tmp_path), "--out", str(tmp_path / "out"),
-              "--max-cost", "1.5", "--concurrency", "3", "--repeat", "4", "--cache"])
+              "--max-cost", "1.5", "--concurrency", "3", "--repeat", "4", "--cache",
+              "--cache-dir", str(tmp_path / "c"), "--judge-model", "openai:gpt-4o"])
     assert captured["max_cost"] == 1.5
     assert captured["workers"] == 3
     assert captured["repeat"] == 4
     assert captured["cache"] is True
+    assert captured["cache_dir"] == str(tmp_path / "c")
+    assert captured["judge_model"] == ["openai:gpt-4o"]
 
 
 def test_baseline_saves_file(tmp_path, monkeypatch):

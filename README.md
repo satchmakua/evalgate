@@ -183,6 +183,13 @@ recurs across suites. Cached tasks report $0 cost and ~0 latency and are marked
 real calls to measure variance). Dedup is exact when running sequentially; under
 `--concurrency` it's best-effort.
 
+Pass `--cache-dir DIR` to persist that cache to disk, so re-running a suite
+after editing one task skips re-paying for all the unchanged ones. The key is
+`(model, messages, options)`: editing a task's prompt/system or swapping the
+model forces a real call, editing a grader does not (grading re-runs on the
+cached output). Entries are one JSON file per key, written atomically; a
+fully-cached re-run costs $0.
+
 ## Adding a suite
 
 Drop a YAML file in `suites/`:

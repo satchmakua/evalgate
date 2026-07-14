@@ -21,11 +21,13 @@ limitations that motivate it.
 
 ## Near term
 
-- Persist the completion cache to disk so unchanged tasks are skipped across runs.
+- _(done 2026-07-14)_ Persist the completion cache to disk (`--cache-dir`) so
+  unchanged tasks are skipped across runs.
 
 ## Medium term
 
 - Weighted scoring (per-suite or per-tag weights) in the gate.
+- A scheduled (non-gating) CI job that runs the judge suites on a stronger judge.
 
 ---
 

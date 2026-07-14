@@ -272,6 +272,39 @@ def test_grader_exception_becomes_task_error_not_run_abort(monkeypatch):
     assert r.output == "positive"                  # the model output is preserved
 
 
+def test_disk_cache_skips_unchanged_task_across_runs(monkeypatch, tmp_path):
+    fake = FakeProvider(text="positive")
+    _use(monkeypatch, fake)
+    task = Task(id="t", prompt="x", graders=[_contains("positive")])
+    suite = Suite(name="s", tasks=[task], models=["openai:gpt-4o"])
+    cfg = {"default_provider": "ollama", "model_options": {}}
+    d = str(tmp_path / "cache")
+
+    run_suites([suite], cfg, cache_dir=d)
+    assert len(fake.calls) == 1
+    # a fresh run (new DiskCache reading the same dir) must hit disk, not re-call
+    r2 = run_suites([suite], cfg, cache_dir=d)[0]
+    assert len(fake.calls) == 1          # unchanged -> served from disk
+    assert r2.cached is True
+    assert r2.output == "positive" and r2.cost_usd == 0.0
+
+
+def test_disk_cache_misses_on_changed_prompt(monkeypatch, tmp_path):
+    fake = FakeProvider(text="positive")
+    _use(monkeypatch, fake)
+    cfg = {"default_provider": "ollama", "model_options": {}}
+    d = str(tmp_path / "cache")
+
+    def run_with_prompt(p):
+        suite = Suite(name="s", tasks=[Task(id="t", prompt=p, graders=[_contains("positive")])],
+                      models=["openai:gpt-4o"])
+        return run_suites([suite], cfg, cache_dir=d)
+
+    run_with_prompt("first prompt")
+    run_with_prompt("second prompt")
+    assert len(fake.calls) == 2          # different prompt -> different key -> real call
+
+
 def test_task_result_carries_tags(monkeypatch):
     _use(monkeypatch, FakeProvider(text="positive"))
     task = Task(id="t", prompt="x", tags=["reasoning"], graders=[_contains("positive")])

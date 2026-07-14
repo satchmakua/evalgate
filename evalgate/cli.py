@@ -34,6 +34,9 @@ def _add_common(ap):
                     help="run each task N times; verdict is a majority vote (default 1)")
     ap.add_argument("--cache", action="store_true",
                     help="reuse identical (model, prompt) completions within the run")
+    ap.add_argument("--cache-dir", metavar="DIR",
+                    help="persist the completion cache to DIR so unchanged tasks "
+                         "are skipped across runs")
     ap.add_argument("--judge-model", nargs="*",
                     help="override the judge model(s) for all llm_judge graders "
                          "(e.g. --judge-model anthropic:claude-haiku-4-5)")
@@ -88,6 +91,7 @@ def main(argv=None):
         repeat=args.repeat,
         cache=args.cache,
         judge_model=args.judge_model,
+        cache_dir=args.cache_dir,
     )
 
     if args.cmd == "run":

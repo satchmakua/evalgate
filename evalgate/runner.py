@@ -4,6 +4,7 @@ import json
 import statistics
 from concurrent.futures import FIRST_COMPLETED, ThreadPoolExecutor, wait
 
+from .cache import DiskCache
 from .graders import is_deterministic, run_grader
 from .pricing import cost_usd
 from .providers import get_provider, parse_model_id
@@ -164,7 +165,8 @@ def _run_task_sampled(suite, task, model_id, default_provider, options,
 
 
 def run_suites(suites, config, cli_models=None, deterministic_only=False,
-               max_cost=None, workers=1, repeat=1, cache=False, judge_model=None):
+               max_cost=None, workers=1, repeat=1, cache=False, judge_model=None,
+               cache_dir=None):
     """Run every (suite, model, task) and collect results.
 
     `workers` runs that many tasks in parallel (default 1 = sequential). Each
@@ -184,6 +186,12 @@ def run_suites(suites, config, cli_models=None, deterministic_only=False,
     under `repeat > 1`. Dedup is exact when sequential; under `workers > 1` it's
     best-effort (two identical calls launched at the same instant may both run).
 
+    `cache_dir` (path) persists that cache to disk instead of memory, so an
+    unchanged task is skipped across runs (a cached task reports $0 and ~0
+    latency -- it was paid for in an earlier run). Editing a task's prompt/system
+    or the model changes the key and forces a real call; editing a grader does
+    not (grading re-runs on the cached output).
+
     `max_cost` is an optional USD budget. It's a soft cap: no new task is started
     once cumulative spend has reached the budget. With `workers > 1`, up to
     `workers` tasks may already be in flight when the budget trips, so the
@@ -193,7 +201,12 @@ def run_suites(suites, config, cli_models=None, deterministic_only=False,
     options = config.get("model_options", {})
     default_provider = config.get("default_provider", "ollama")
     workers = max(1, workers)
-    cache_store = {} if cache else None
+    if cache_dir:
+        cache_store = DiskCache(cache_dir)
+    elif cache:
+        cache_store = {}
+    else:
+        cache_store = None
     judge_override = judge_model or None
 
     work = [(suite, model_id, task)
