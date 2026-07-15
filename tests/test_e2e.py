@@ -9,13 +9,13 @@ import json
 import threading
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
-from evalgate import runner as runner_mod
-from evalgate.providers.anthropic import AnthropicProvider
-from evalgate.providers.bedrock import BedrockProvider, sigv4_headers
-from evalgate.providers.gemini import GeminiProvider
-from evalgate.providers.openai import OpenAIProvider
-from evalgate.runner import run_suites
-from evalgate.types import Suite, Task
+from gatecheck import runner as runner_mod
+from gatecheck.providers.anthropic import AnthropicProvider
+from gatecheck.providers.bedrock import BedrockProvider, sigv4_headers
+from gatecheck.providers.gemini import GeminiProvider
+from gatecheck.providers.openai import OpenAIProvider
+from gatecheck.runner import run_suites
+from gatecheck.types import Suite, Task
 
 
 def _openai_body(content, prompt_tokens=11, completion_tokens=3):

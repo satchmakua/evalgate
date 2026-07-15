@@ -1,4 +1,6 @@
-# evalgate
+# Gatecheck
+
+*(formerly `evalgate`, and before that `llm-eval-harness`)*
 
 A small, provider-agnostic harness for **evaluating LLMs the way you'd test any
 other system**: define task suites, grade outputs with deterministic checks and
@@ -35,7 +37,7 @@ Every bundled suite, two local models and one hosted model, one command
 (hosted spend: ~$0.001):
 
 ```bash
-evalgate run --models ollama:llama3.1:8b ollama:qwen2.5:7b-instruct anthropic:claude-haiku-4-5
+gatecheck run --models ollama:llama3.1:8b ollama:qwen2.5:7b-instruct anthropic:claude-haiku-4-5
 ```
 
 | suite | model | pass (95% CI) | judge | cost | p50 |
@@ -105,9 +107,9 @@ ollama serve
 ollama pull llama3.1:8b
 ollama pull qwen2.5:7b-instruct
 
-evalgate run                       # run every suite against the config defaults
-evalgate run --only classification # just one suite
-evalgate run --models ollama:qwen2.5:7b-instruct
+gatecheck run                       # run every suite against the config defaults
+gatecheck run --only classification # just one suite
+gatecheck run --models ollama:qwen2.5:7b-instruct
 ```
 
 Each run prints a summary table (pass rate with a 95% Wilson confidence
@@ -126,12 +128,12 @@ does on, say, all `reasoning` tasks.
 
 ```bash
 # 1. record where you stand today
-evalgate baseline --name default
+gatecheck baseline --name default
 
 # 2. later -- after a prompt edit, model swap, dependency bump -- gate against it
-evalgate gate --name default                 # fails (exit 1) on any pass-rate drop
-evalgate gate --name default --tolerance 0.1 # allow up to a 10-point drop
-evalgate gate --only classification --min-pass-rate 0.8
+gatecheck gate --name default                 # fails (exit 1) on any pass-rate drop
+gatecheck gate --name default --tolerance 0.1 # allow up to a 10-point drop
+gatecheck gate --only classification --min-pass-rate 0.8
 ```
 
 In CI (`.github/workflows/evals.yml`) the `test` job always runs the unit tests.
@@ -151,7 +153,7 @@ to gate on; run those locally or on a schedule.
 | Gemini      | `gemini:`     | per token   | `GEMINI_API_KEY`     |
 | Bedrock     | `bedrock:`    | per token   | AWS creds + region (env) |
 
-Cost is computed from `evalgate/pricing.py`, which ships current OpenAI, Anthropic,
+Cost is computed from `gatecheck/pricing.py`, which ships current OpenAI, Anthropic,
 Google Gemini, and Amazon Bedrock (Anthropic) rates (verified 2026-06-27 against
 each provider's pricing page; Bedrock matches first-party Anthropic list price).
 Provider pricing drifts over time, so re-check it periodically. Any model not
@@ -273,23 +275,23 @@ graders. Write-up and artifacts: [`docs/example-run/hard-suites.md`](docs/exampl
 
 **Read the files in this order.**
 
-1. `evalgate/types.py` — the five dataclasses everything else passes around
+1. `gatecheck/types.py` — the five dataclasses everything else passes around
    (`Task`, `Suite`, `Completion`, `GradeResult`, `TaskResult`). The whole repo
    is functions over these. Note `TaskResult.verdict`: the pass/fail rule.
-2. `evalgate/cli.py` — the three subcommands (`run`, `baseline`, `gate`) and how a
+2. `gatecheck/cli.py` — the three subcommands (`run`, `baseline`, `gate`) and how a
    run is wired together. This is the front door.
-3. `evalgate/runner.py` — the core loop: every (suite × model × task) becomes one
+3. `gatecheck/runner.py` — the core loop: every (suite × model × task) becomes one
    `TaskResult`. The single most important file.
-4. `evalgate/providers/` — `base.py` is the one-method interface; `ollama.py`,
+4. `gatecheck/providers/` — `base.py` is the one-method interface; `ollama.py`,
    `openai.py`, `anthropic.py`, `gemini.py`, `bedrock.py` are uniform raw-HTTP
    adapters (hosted ones retry transient failures via `_http.py`; Bedrock adds
    SigV4 signing); `__init__.py` holds the registry and the `provider:model`
    id parser.
-5. `evalgate/graders/` — `deterministic.py` (`exact`, `contains`, `regex`,
+5. `gatecheck/graders/` — `deterministic.py` (`exact`, `contains`, `regex`,
    `json_schema`) and `llm_judge.py` (a second model scores 1–5 against a rubric).
-6. `evalgate/report.py` then `evalgate/gate.py` — aggregation into per-(suite, model)
+6. `gatecheck/report.py` then `gatecheck/gate.py` — aggregation into per-(suite, model)
    summaries, then comparison against a committed baseline.
-7. `evalgate/pricing.py` — the token→USD table and the `$0` fallback.
+7. `gatecheck/pricing.py` — the token→USD table and the `$0` fallback.
 
 **The one path that matters (a `run`).** Config + `suites/*.yaml` are loaded into
 `Suite`/`Task` objects → `runner` iterates suites × models × tasks → for each
@@ -328,7 +330,7 @@ the current implementation status is in [`PROGRESS.md`](PROGRESS.md).
 ## Layout
 
 ```
-evalgate/        the package (providers, graders, runner, report, gate, cli)
+gatecheck/     the package (providers, graders, runner, report, gate, cli)
 suites/        eval suites in YAML
 baselines/     committed baseline snapshots for gating
 tests/         pytest unit tests + a stubbed-HTTP end-to-end test

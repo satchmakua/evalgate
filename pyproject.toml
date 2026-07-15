@@ -3,7 +3,7 @@ requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "evalgate"
+name = "gatecheck"
 version = "0.1.0"
 description = "Provider-agnostic LLM evaluation harness: task suites, deterministic + LLM-as-judge graders, regression gating, and cost/latency tracking."
 readme = "README.md"
@@ -19,10 +19,10 @@ dependencies = [
 dev = ["pytest>=7.0"]
 
 [project.scripts]
-evalgate = "evalgate.cli:main"
+gatecheck = "gatecheck.cli:main"
 
 [tool.setuptools.packages.find]
-include = ["evalgate*"]
+include = ["gatecheck*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

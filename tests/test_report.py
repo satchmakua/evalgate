@@ -1,8 +1,8 @@
 import json
 from pathlib import Path
 
-from evalgate.report import _tag_rows, summarize, write_reports
-from evalgate.types import GradeResult, TaskResult
+from gatecheck.report import _tag_rows, summarize, write_reports
+from gatecheck.types import GradeResult, TaskResult
 
 
 def test_summarize_groups_and_counts():

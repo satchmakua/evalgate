@@ -1,6 +1,13 @@
 # Progress
 
-Current implementation status of evalgate. Last updated 2026-07-13.
+## 2026-07-15 — Renamed evalgate to Gatecheck
+
+Product renamed **evalgate → Gatecheck** (PyPI name: `gatecheck`). Package dir,
+console script, and config file are now `gatecheck/`, `gatecheck`, and
+`gatecheck.config.yaml`; README, CI workflow, and doc references updated.
+Entries below keep the names they shipped under.
+
+Current implementation status of Gatecheck. Last updated 2026-07-15.
 
 ## Proven in a real run
 
@@ -17,7 +24,7 @@ full run → baseline → gate loop has been exercised for real.
 
 - **Suite loading** — eval suites defined in YAML (`suites/*.yaml`), loaded into
   `Suite`/`Task` objects, with per-task and suite-level `tags` merged
-  (`evalgate/suite.py`).
+  (`gatecheck/suite.py`).
 - **Bundled suites** — seven, chosen to show eval *taste*: `classification` and
   `structured-output` (deterministic, gate CI), `summarization`, `faithfulness`
   (RAG grounding — abstention + counterfactual grounding), `tool-use`
@@ -28,19 +35,19 @@ full run → baseline → gate loop has been exercised for real.
   Google Gemini, and Amazon Bedrock (Anthropic models, hand-rolled SigV4) behind
   a single interface, addressed as `provider:model`. Hosted adapters retry
   transient failures (HTTP 429 / 5xx, dropped connections) with exponential
-  backoff (`evalgate/providers/`).
+  backoff (`gatecheck/providers/`).
 - **Graders** — deterministic (`exact`, `contains`, `regex`, `json_schema`), an
   LLM-as-judge grader that can ensemble across multiple judge models (mean
   score), and a `pairwise` preference grader that compares the output against a
-  reference answer with a position-swap to control order bias (`evalgate/graders/`).
+  reference answer with a position-swap to control order bias (`gatecheck/graders/`).
 - **Runner** — executes every (suite × model × task) into a `TaskResult`, with
   per-task fault isolation, optional parallelism (`--concurrency`, results kept
   in stable order), optional repeated sampling (`--repeat`, majority-vote
   verdict + pass fraction), an optional completion cache in memory (`--cache`)
-  or persisted to disk across runs (`--cache-dir`, `evalgate/cache.py`), an
+  or persisted to disk across runs (`--cache-dir`, `gatecheck/cache.py`), an
   optional `--judge-model` override that swaps the judge for every judge grader
   without editing suite YAML, and an optional `--max-cost` budget that stops a
-  run before it overspends (`evalgate/runner.py`).
+  run before it overspends (`gatecheck/runner.py`).
 - **Reporting** — per-(suite, model) summaries with pass rate (and a 95% Wilson
   confidence interval), mean judge score, token/cost totals, and p50/p95 latency
   (JSON, CSV, a browsable self-contained HTML dashboard, and a Markdown report
@@ -48,14 +55,14 @@ full run → baseline → gate loop has been exercised for real.
   flags tasks that flip under `--repeat`, and breaks scores down per (tag,
   model)), plus a `transcripts-*.jsonl` with one
   self-contained record per task — input sent, model output, and grades — for
-  debugging (`evalgate/report.py`).
+  debugging (`gatecheck/report.py`).
 - **Regression gating** — baseline snapshots plus relative-drop and absolute
   pass-rate floors, with a non-zero exit code on failure; wired into GitHub
-  Actions (`evalgate/gate.py`, `.github/workflows/evals.yml`).
+  Actions (`gatecheck/gate.py`, `.github/workflows/evals.yml`).
 - **Cost tracking** — current OpenAI, Anthropic, Google Gemini, and Amazon
   Bedrock (Anthropic) token rates with a `$0` fallback for local and unlisted
   models; LLM-judge calls are priced and folded into each task's cost, broken
-  out as `judge_cost_usd` (`evalgate/pricing.py`, `evalgate/runner.py`).
+  out as `judge_cost_usd` (`gatecheck/pricing.py`, `gatecheck/runner.py`).
 
 ## Tested
 

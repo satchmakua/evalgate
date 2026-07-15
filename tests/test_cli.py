@@ -1,5 +1,5 @@
-from evalgate import cli
-from evalgate.types import GradeResult, TaskResult
+from gatecheck import cli
+from gatecheck.types import GradeResult, TaskResult
 
 
 def _results(passed=True):

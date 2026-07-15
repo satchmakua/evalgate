@@ -4,11 +4,12 @@ Artifacts from a real run of every bundled suite against two local models and
 one hosted model:
 
 ```
-evalgate run --models ollama:llama3.1:8b ollama:qwen2.5:7b-instruct anthropic:claude-haiku-4-5
+gatecheck run --models ollama:llama3.1:8b ollama:qwen2.5:7b-instruct anthropic:claude-haiku-4-5
 ```
 
-*(The captured artifacts predate the project's rename and carry the old `lmeval`
-name internally; they are kept byte-for-byte as produced.)*
+*(The captured artifacts predate the project's renames and carry the old names
+— `lmeval`, and `evalgate` for the hard-suites run — internally; they are kept
+byte-for-byte as produced.)*
 
 - [`summary.md`](summary.md) — the per-(suite, model) table with Wilson CIs,
   the per-tag breakdown, and the Failures section.

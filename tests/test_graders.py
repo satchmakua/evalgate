@@ -1,4 +1,4 @@
-from evalgate.graders import is_deterministic, run_grader
+from gatecheck.graders import is_deterministic, run_grader
 
 
 def test_contains_any_ignorecase():

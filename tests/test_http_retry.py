@@ -1,8 +1,8 @@
 import pytest
 import requests
 
-from evalgate.providers import _http
-from evalgate.providers._http import post_with_retries
+from gatecheck.providers import _http
+from gatecheck.providers._http import post_with_retries
 
 
 class FakeResp:

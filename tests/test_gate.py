@@ -1,5 +1,5 @@
-from evalgate.gate import gate, save_baseline
-from evalgate.types import GradeResult, TaskResult
+from gatecheck.gate import gate, save_baseline
+from gatecheck.types import GradeResult, TaskResult
 
 
 def _result(passed):

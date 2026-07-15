@@ -21,7 +21,7 @@ def _load_config(path):
 
 def _add_common(ap):
     ap.add_argument("--suites", default="suites", help="suite file or directory")
-    ap.add_argument("--config", default="evalgate.config.yaml")
+    ap.add_argument("--config", default="gatecheck.config.yaml")
     ap.add_argument("--models", nargs="*", help="override models (provider:model ...)")
     ap.add_argument("--only", nargs="*", help="limit to named suites")
     ap.add_argument("--deterministic-only", action="store_true",
@@ -55,7 +55,7 @@ def _text_table(rows):
 
 
 def main(argv=None):
-    parser = argparse.ArgumentParser(prog="evalgate", description="LLM eval harness")
+    parser = argparse.ArgumentParser(prog="gatecheck", description="LLM eval harness")
     sub = parser.add_subparsers(dest="cmd", required=True)
 
     p_run = sub.add_parser("run", help="run suites and write a report")

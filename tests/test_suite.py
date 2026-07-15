@@ -1,4 +1,4 @@
-from evalgate.suite import load_suites
+from gatecheck.suite import load_suites
 
 SUITE_YAML = """
 name: demo

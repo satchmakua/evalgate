@@ -1,6 +1,6 @@
 # Roadmap
 
-Planned work for evalgate, roughly in priority order, with the known
+Planned work for Gatecheck, roughly in priority order, with the known
 limitations that motivate it.
 
 ## Known limitations
@@ -48,8 +48,9 @@ limitations that motivate it.
 - [x] **H1 — Position + rename.** Done 2026-07-13: README opens with a "why this
   and not promptfoo / Inspect AI / Braintrust" section plus an EleutherAI
   disambiguation note; package, CLI, and config renamed **lmeval → evalgate**
-  (105 tests green under the new name). *Remaining:* rename the GitHub repo
-  itself (`llm-eval-harness` → `evalgate`) — owner action.
+  (105 tests green under the new name). Superseded 2026-07-15 by a second
+  rename, **evalgate → Gatecheck** (see `PROGRESS.md`). *Remaining:* rename the
+  GitHub repo itself (`llm-eval-harness` → `gatecheck`) — owner action.
 - [x] **H2 — Show eval *taste*: ship hard suites.** Done 2026-07-13. Shipped
   `faithfulness` (abstention + counterfactual grounding), `tool-use` (selection
   + arg-grounding via `json_schema`, decline/clarify by judge), and `red-team`

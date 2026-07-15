@@ -1,8 +1,8 @@
 import pytest
 
-from evalgate.providers import get_provider, parse_model_id
-from evalgate.providers.anthropic import AnthropicProvider
-from evalgate.providers.ollama import OllamaProvider
+from gatecheck.providers import get_provider, parse_model_id
+from gatecheck.providers.anthropic import AnthropicProvider
+from gatecheck.providers.ollama import OllamaProvider
 
 
 def test_parse_prefixed_id():

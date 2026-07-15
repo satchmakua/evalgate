@@ -1,5 +1,5 @@
-from evalgate.cache import DiskCache
-from evalgate.types import Completion
+from gatecheck.cache import DiskCache
+from gatecheck.types import Completion
 
 
 def _comp(text="hi"):

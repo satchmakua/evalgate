@@ -1,4 +1,4 @@
-from evalgate.pricing import PRICING, cost_usd
+from gatecheck.pricing import PRICING, cost_usd
 
 
 def test_known_model_priced_from_table():

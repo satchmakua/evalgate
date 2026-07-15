@@ -10,8 +10,8 @@ local judge, once re-graded by Claude Haiku via `--judge-model` (nothing else
 changed):
 
 ```bash
-evalgate run --only faithfulness tool-use red-team --models ollama:llama3.1:8b ollama:qwen2.5:7b-instruct anthropic:claude-haiku-4-5
-evalgate run --only faithfulness tool-use red-team --models ...same... --judge-model anthropic:claude-haiku-4-5
+gatecheck run --only faithfulness tool-use red-team --models ollama:llama3.1:8b ollama:qwen2.5:7b-instruct anthropic:claude-haiku-4-5
+gatecheck run --only faithfulness tool-use red-team --models ...same... --judge-model anthropic:claude-haiku-4-5
 ```
 
 Full reports: [`hard-suites-local-judge.md`](hard-suites-local-judge.md),

@@ -1,7 +1,7 @@
-from evalgate import runner as runner_mod
-from evalgate.pricing import cost_usd
-from evalgate.runner import resolve_models, run_suites, run_task
-from evalgate.types import Completion, Suite, Task
+from gatecheck import runner as runner_mod
+from gatecheck.pricing import cost_usd
+from gatecheck.runner import resolve_models, run_suites, run_task
+from gatecheck.types import Completion, Suite, Task
 
 
 class FakeProvider:
