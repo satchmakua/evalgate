@@ -1,8 +1,16 @@
 # Gatecheck
 
+[![PyPI](https://img.shields.io/pypi/v/gatecheck)](https://pypi.org/project/gatecheck/)
+[![Python versions](https://img.shields.io/pypi/pyversions/gatecheck)](https://pypi.org/project/gatecheck/)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
+
 A small, provider-agnostic harness for **evaluating LLMs the way you'd test any
 other system**: define task suites, grade outputs with deterministic checks and
 an LLM judge, gate regressions in CI, and track cost and latency per model.
+
+```bash
+pip install gatecheck
+```
 
 > **Why this exists.** Shipping with LLMs without evals is shipping on vibes.
 > An *eval harness* is the testing layer for model-backed systems: it turns
