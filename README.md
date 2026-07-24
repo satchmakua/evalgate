@@ -1,7 +1,5 @@
 # Gatecheck
 
-*(formerly `evalgate`, and before that `llm-eval-harness`)*
-
 A small, provider-agnostic harness for **evaluating LLMs the way you'd test any
 other system**: define task suites, grade outputs with deterministic checks and
 an LLM judge, gate regressions in CI, and track cost and latency per model.
